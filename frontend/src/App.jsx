@@ -43,6 +43,9 @@ const AdminProducts     = lazy(() => import('./pages/admin/ProductsPage'))
 const AddProductPage    = lazy(() => import('./pages/admin/AddProductPage'))
 const AdminOrders       = lazy(() => import('./pages/admin/OrdersPage'))
 const AdminUsers        = lazy(() => import('./pages/admin/UsersPage'))
+const AdminAnalytics    = lazy(() => import('./pages/admin/AnalyticsPage'))
+const AdminInventory    = lazy(() => import('./pages/admin/InventoryPage'))
+const AdminCoupons      = lazy(() => import('./pages/admin/CouponsPage'))
 
 function PageLoader() {
   return (
@@ -149,6 +152,9 @@ function AppInner() {
               <Route path="/admin/products/edit/:id" element={<AddProductPage />} />
               <Route path="/admin/orders"           element={<AdminOrders />} />
               <Route path="/admin/users"            element={<AdminUsers />} />
+              <Route path="/admin/analytics"        element={<AdminAnalytics />} />
+              <Route path="/admin/inventory"        element={<AdminInventory />} />
+              <Route path="/admin/coupons"          element={<AdminCoupons />} />
             </Route>
           </Route>
 

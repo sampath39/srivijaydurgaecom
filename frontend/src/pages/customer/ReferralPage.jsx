@@ -33,7 +33,7 @@ export default function ReferralPage() {
 
   const shareApp = () => {
     if (navigator.share) {
-      navigator.share({ title: 'Sri Vijaya Durga Kadi Emporium', text: `Use my referral code ${data?.referral_code} for 50 bonus points!`, url: shareLink })
+      navigator.share({ title: 'srivijaydurgakadhiemporeum', text: `Use my referral code ${data?.referral_code} for 50 bonus points!`, url: shareLink })
     } else {
       navigator.clipboard.writeText(shareLink)
       toast.success('Share link copied!')
@@ -44,7 +44,7 @@ export default function ReferralPage() {
     <div className="page-container py-10">
       <div className="text-center mb-10">
         <h1 className="font-display text-4xl font-bold text-gray-900 dark:text-white mb-2">👥 Refer & Earn</h1>
-        <p className="text-gray-500 max-w-lg mx-auto">Invite friends to Sri Vijaya Durga Kadi Emporium and earn reward points for every successful referral!</p>
+        <p className="text-gray-500 max-w-lg mx-auto">Invite friends to srivijaydurgakadhiemporeum and earn reward points for every successful referral!</p>
       </div>
 
       {/* How it works */}

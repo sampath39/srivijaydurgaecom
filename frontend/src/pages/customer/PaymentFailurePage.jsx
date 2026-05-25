@@ -39,7 +39,7 @@ export default function PaymentFailurePage() {
         key:      data.key_id,
         amount:   data.amount,
         currency: data.currency,
-        name:     'Sri Vijaya Durga Kadi Emporium',
+        name:     'srivijaydurgakadhiemporeum',
         description: `Retry Order ${data.order_number}`,
         order_id: data.razorpay_order_id,
         prefill:  data.prefill,

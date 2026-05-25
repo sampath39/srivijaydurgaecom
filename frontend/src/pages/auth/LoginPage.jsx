@@ -19,14 +19,14 @@ const schema = z.object({
 export default function LoginPage() {
   const navigate = useNavigate()
   const [showPwd, setShowPwd]   = useState(false)
-  const [loading, setLoading]   = useState(false)
+  const [loginLoading, setLoginLoading]   = useState(false)
   const [loginErr, setLoginErr] = useState('')
   const [shake, setShake]       = useState(false)
 
   const { register, handleSubmit, formState: { errors } } = useForm({ resolver: zodResolver(schema) })
 
   const onSubmit = async (data) => {
-    setLoading(true)
+    setLoginLoading(true)
     setLoginErr('')
     try {
       const { data: authData, error } = await supabase.auth.signInWithPassword({
@@ -76,7 +76,7 @@ export default function LoginPage() {
       setShake(true)
       setTimeout(() => setShake(false), 600)
     } finally {
-      setLoading(false)
+      setLoginLoading(false)
     }
   }
 
@@ -137,9 +137,9 @@ export default function LoginPage() {
           {errors.password && <p className="text-accent-400 text-xs mt-1">{errors.password.message}</p>}
         </div>
 
-        <button type="submit" disabled={loading}
+        <button type="submit" disabled={loginLoading}
           className="btn-primary w-full justify-center py-3.5 text-base">
-          {loading ? (
+          {loginLoading ? (
             <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
           ) : 'Sign In'}
         </button>

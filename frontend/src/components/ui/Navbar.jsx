@@ -97,14 +97,11 @@ export default function Navbar() {
 
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2.5 shrink-0">
-              <div className="w-10 h-10 bg-gradient-gold rounded-xl flex items-center justify-center text-lg shadow-gold">
-                🥻
-              </div>
+              <img src="/durga-logo.png" alt="srivijaydurgakadhiemporeum Logo" className="w-12 h-12 rounded-xl object-contain drop-shadow-md bg-gradient-to-br from-amber-50 to-white dark:from-dark-800 dark:to-dark-900 border border-amber-200 dark:border-dark-700" />
               <div className="hidden sm:block">
                 <p className="font-display font-bold text-gray-900 dark:text-white leading-tight text-sm">
-                  Sri Vijaya Durga
+                  srivijaydurgakadhiemporeum
                 </p>
-                <p className="text-primary-600 text-xs font-medium">Kadi Emporium</p>
               </div>
             </Link>
 

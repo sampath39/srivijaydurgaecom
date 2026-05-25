@@ -22,10 +22,9 @@ export default function Footer() {
         {/* Brand */}
         <div className="md:col-span-1">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-gradient-gold rounded-xl flex items-center justify-center text-lg">🥻</div>
+            <img src="/durga-logo.png" alt="Logo" className="w-10 h-10 rounded-xl object-contain bg-white p-1" />
             <div>
-              <p className="font-display font-bold text-white">Sri Vijaya Durga</p>
-              <p className="text-primary-400 text-xs">Kadi Emporium</p>
+              <p className="font-display font-bold text-white">srivijaydurgakadhiemporeum</p>
             </div>
           </div>
           <p className="text-sm text-gray-400 leading-relaxed mb-4">
@@ -106,7 +105,7 @@ export default function Footer() {
 
       <div className="border-t border-white/10 py-5">
         <div className="page-container flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-xs text-gray-500">© 2024 Sri Vijaya Durga Kadi Emporium. All rights reserved.</p>
+          <p className="text-xs text-gray-500">© 2024 srivijaydurgakadhiemporeum. All rights reserved.</p>
           <div className="flex gap-4">
             <a href="#" className="text-xs text-gray-500 hover:text-primary-400">Privacy Policy</a>
             <a href="#" className="text-xs text-gray-500 hover:text-primary-400">Terms of Service</a>

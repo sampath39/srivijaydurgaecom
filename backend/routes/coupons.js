@@ -47,12 +47,38 @@ router.post('/', auth, adminOnly, async (req, res) => {
   } catch (err) { res.status(500).json({ success: false, message: err.message }) }
 })
 
-// DELETE /api/coupons/:id
+// DELETE /api/coupons/:id — hard delete
 router.delete('/:id', auth, adminOnly, async (req, res) => {
   try {
-    await supabase.from('coupons').update({ is_active: false }).eq('id', req.params.id)
-    res.json({ success: true, message: 'Coupon deactivated' })
+    await supabase.from('coupons').delete().eq('id', req.params.id)
+    res.json({ success: true, message: 'Coupon deleted' })
+  } catch (err) { res.status(500).json({ success: false, message: err.message }) }
+})
+
+// GET /api/coupons/admin/all — full list with used_count
+router.get('/admin/all', auth, adminOnly, async (_req, res) => {
+  try {
+    const { data } = await supabase
+      .from('coupons')
+      .select('*')
+      .order('created_at', { ascending: false })
+    res.json({ success: true, data })
+  } catch (err) { res.status(500).json({ success: false, message: err.message }) }
+})
+
+// PUT /api/coupons/:id — admin update (toggle active, update fields)
+router.put('/:id', auth, adminOnly, async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('coupons')
+      .update({ ...req.body, updated_at: new Date().toISOString() })
+      .eq('id', req.params.id)
+      .select()
+      .single()
+    if (error) throw error
+    res.json({ success: true, data })
   } catch (err) { res.status(500).json({ success: false, message: err.message }) }
 })
 
 module.exports = router
+

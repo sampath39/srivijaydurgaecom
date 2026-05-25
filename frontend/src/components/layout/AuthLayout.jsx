@@ -19,12 +19,9 @@ export default function AuthLayout() {
           className="mb-8 text-center">
           <Link to="/" className="inline-block">
             <div className="flex items-center gap-3 justify-center">
-              <div className="w-12 h-12 bg-gradient-gold rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-gold">
-                🥻
-              </div>
+              <img src="/durga-logo.png" alt="Logo" className="w-12 h-12 rounded-xl object-contain bg-white p-1" />
               <div className="text-left">
-                <p className="text-white font-display font-bold text-xl leading-tight">Sri Vijaya Durga</p>
-                <p className="text-primary-400 text-sm">Kadi Emporium</p>
+                <p className="text-white font-display font-bold text-xl leading-tight">srivijaydurgakadhiemporeum</p>
               </div>
             </div>
           </Link>
@@ -34,7 +31,7 @@ export default function AuthLayout() {
           <Outlet />
         </motion.div>
         <p className="mt-8 text-gray-500 text-sm text-center">
-          © 2024 Sri Vijaya Durga Kadi Emporium, Arundelpet, Guntur
+          © 2024 srivijaydurgakadhiemporeum, Arundelpet, Guntur
         </p>
       </div>
     </div>

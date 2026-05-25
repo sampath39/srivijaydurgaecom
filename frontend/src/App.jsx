@@ -70,25 +70,39 @@ function AppInner() {
       try { store.dispatch(setWishlist(JSON.parse(wl))) } catch {}
     }
 
-    // Auth listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
-        store.dispatch(setUser(session.user))
-        store.dispatch(setLoading(true))
-        try {
-          const { data } = await supabase.from('profiles').select('*').eq('id', session.user.id).single()
-          if (data) store.dispatch(setProfile(data))
-        } catch (err) {
-          console.error("Failed to load profile in auth listener:", err)
-        } finally {
-          store.dispatch(setLoading(false))
+    // ── Auth initialisation ────────────────────────────────────────
+    // We use getSession() for the initial load (handles page refresh).
+    // onAuthStateChange is kept SYNCHRONOUS to avoid a Supabase deadlock:
+    // making an async DB call inside the callback tries to acquire the
+    // same internal auth-lock that Supabase already holds → infinite hang.
+    const initAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session?.user) {
+          store.dispatch(setUser(session.user))
+          const { data: profile } = await supabase
+            .from('profiles').select('*').eq('id', session.user.id).single()
+          if (profile) store.dispatch(setProfile(profile))
         }
-      } else {
+      } catch (err) {
+        console.error('Auth init error:', err)
+      } finally {
+        store.dispatch(setLoading(false))
+      }
+    }
+    initAuth()
+
+    // SYNCHRONOUS listener — no async DB calls here to avoid the lock
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT' || !session) {
         store.dispatch(clearAuth())
       }
+      // SIGNED_IN is handled by LoginPage which dispatches to Redux directly
+      // before navigating, so AdminRoute already sees the correct state.
     })
     return () => subscription.unsubscribe()
   }, [])
+
 
   return (
     <BrowserRouter>

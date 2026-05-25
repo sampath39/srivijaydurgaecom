@@ -7,6 +7,8 @@ import { motion } from 'framer-motion'
 import { Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react'
 import { FaGoogle } from 'react-icons/fa'
 import { supabase } from '../../lib/supabase'
+import store from '../../store'
+import { setUser, setProfile, setLoading } from '../../store/slices/authSlice'
 import toast from 'react-hot-toast'
 
 const schema = z.object({
@@ -27,20 +29,38 @@ export default function LoginPage() {
     setLoading(true)
     setLoginErr('')
     try {
-      const { data: authData, error } = await supabase.auth.signInWithPassword({ email: data.email, password: data.password })
+      const { data: authData, error } = await supabase.auth.signInWithPassword({
+        email: data.email,
+        password: data.password,
+      })
+
       if (error) {
-        setLoginErr(error.message === 'Invalid login credentials'
+        // Map common error messages to friendly text
+        const msg = error.message === 'Invalid login credentials'
           ? 'Invalid email or password. Please try again.'
-          : error.message)
+          : error.message === 'Email not confirmed'
+          ? 'Please verify your email first, or contact support.'
+          : error.message
+        setLoginErr(msg)
         setShake(true)
         setTimeout(() => setShake(false), 600)
-      } else if (authData?.user) {
-        // Fetch profile to check if user is admin
+        return
+      }
+
+      if (authData?.user) {
+        // Fetch full profile (needed for role check + Admin Panel)
         const { data: profile } = await supabase
           .from('profiles')
-          .select('role')
+          .select('*')
           .eq('id', authData.user.id)
           .single()
+
+        // ── Dispatch to Redux BEFORE navigate ──────────────────────
+        // This ensures AdminRoute already sees user + isAdmin + loading=false
+        // the instant it first renders, preventing the redirect-to-home bug.
+        store.dispatch(setUser(authData.user))
+        if (profile) store.dispatch(setProfile(profile))
+        store.dispatch(setLoading(false))
 
         if (profile?.role === 'admin') {
           toast.success('Welcome to Admin Panel! 👑')
@@ -51,7 +71,7 @@ export default function LoginPage() {
         }
       }
     } catch (err) {
-      console.error("Login exception:", err)
+      console.error('Login error:', err)
       setLoginErr(err.message || 'An unexpected error occurred. Please try again.')
       setShake(true)
       setTimeout(() => setShake(false), 600)

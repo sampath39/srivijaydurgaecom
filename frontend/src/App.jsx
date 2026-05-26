@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { Provider } from 'react-redux'
+import { Provider, useSelector } from 'react-redux'
 import { Toaster } from 'react-hot-toast'
 import store from './store'
 import { supabase } from './lib/supabase'
@@ -82,8 +82,14 @@ function PageLoader() {
 }
 
 function AppInner() {
+  const darkMode = useSelector(state => state.ui?.darkMode)
+
   useEffect(() => {
-    document.documentElement.classList.add('dark');
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
 
     // Restore cart from localStorage
     const saved = localStorage.getItem('svdke_cart')

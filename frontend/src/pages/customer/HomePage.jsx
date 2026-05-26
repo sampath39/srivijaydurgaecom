@@ -97,7 +97,7 @@ export default function HomePage() {
       <ShopBanner />
 
       {/* ── Hero Banner ─────────────────────────────────── */}
-      <section className="relative h-[75vh] min-h-[500px] overflow-hidden">
+      <section className="relative h-[55vh] min-h-[400px] overflow-hidden">
         {HERO_SLIDES.map((s, i) => (
           <motion.div key={i}
             initial={false}

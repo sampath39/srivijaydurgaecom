@@ -6,6 +6,7 @@ import { supabase } from '../../lib/supabase'
 import ProductCard from '../../components/ui/ProductCard'
 import FlashSaleTimer from '../../components/ui/FlashSaleTimer'
 import SkeletonCard from '../../components/ui/SkeletonCard'
+import ShopBanner from '../../components/ui/ShopBanner'
 import { useSelector } from 'react-redux'
 
 const HERO_SLIDES = [
@@ -91,6 +92,9 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen">
+
+      {/* ── Shop Identity Banner ─────────────────────── */}
+      <ShopBanner />
 
       {/* ── Hero Banner ─────────────────────────────────── */}
       <section className="relative h-[75vh] min-h-[500px] overflow-hidden">

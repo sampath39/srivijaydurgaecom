@@ -5,18 +5,6 @@ import { FaInstagram, FaFacebook, FaTwitter, FaYoutube } from 'react-icons/fa'
 export default function Footer() {
   return (
     <footer className="bg-dark-900 text-gray-300 mt-16">
-      {/* Newsletter */}
-      <div className="bg-gradient-gold py-10">
-        <div className="page-container text-center">
-          <h3 className="font-display text-2xl font-bold text-white mb-2">Get Exclusive Offers</h3>
-          <p className="text-white/80 mb-6 text-sm">Subscribe to our newsletter for flash sales, new arrivals & coupon codes</p>
-          <form className="flex max-w-md mx-auto gap-2">
-            <input placeholder="Enter your email" className="flex-1 px-4 py-3 rounded-xl bg-white/20 border border-white/30 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50" />
-            <button type="submit" className="px-6 py-3 bg-white text-primary-700 font-bold rounded-xl hover:bg-white/90 transition-colors">Subscribe</button>
-          </form>
-        </div>
-      </div>
-
       {/* Main footer */}
       <div className="page-container py-14 grid grid-cols-1 md:grid-cols-4 gap-8">
         {/* Brand */}
@@ -24,7 +12,7 @@ export default function Footer() {
           <div className="flex items-center gap-3 mb-4">
             <img src="/durga-logo.png" alt="Logo" className="w-10 h-10 rounded-xl object-contain bg-white p-1" />
             <div>
-              <p className="font-display font-bold text-white">srivijaydurgakadhiemporeum</p>
+              <p className="font-display font-bold text-white tracking-wide">Sri Vijaya Durga Kadi Emporium</p>
             </div>
           </div>
           <p className="text-sm text-gray-400 leading-relaxed mb-4">

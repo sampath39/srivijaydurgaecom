@@ -111,9 +111,8 @@ export default function Navbar() {
             </Link>
 
             {/* Categories dropdown — desktop */}
-            <div className="hidden md:block relative" onMouseLeave={() => setCatMenuOpen(false)}>
+            <div className="hidden md:block relative py-2" onMouseEnter={() => setCatMenuOpen(true)} onMouseLeave={() => setCatMenuOpen(false)}>
               <button
-                onMouseEnter={() => setCatMenuOpen(true)}
                 className="flex items-center gap-1 text-gray-700 dark:text-gray-200 hover:text-primary-600 font-medium text-sm transition-colors"
               >
                 Categories <ChevronDown className="w-4 h-4" />
@@ -122,7 +121,7 @@ export default function Navbar() {
                 {catMenuOpen && (
                   <motion.div
                     initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }}
-                    className="absolute top-full left-0 mt-2 w-64 bg-white dark:bg-dark-800 rounded-2xl shadow-premium border border-gray-100 dark:border-dark-700 p-3 grid grid-cols-2 gap-1"
+                    className="absolute top-full left-0 mt-0.5 w-64 bg-white dark:bg-dark-800 rounded-2xl shadow-premium border border-gray-100 dark:border-dark-700 p-3 grid grid-cols-2 gap-1"
                   >
                     {CATEGORIES.map(cat => (
                       <Link key={cat.slug} to={`/products?category=${cat.slug}`}

@@ -32,12 +32,22 @@ export default function ProductDetailPage() {
 
   useEffect(() => {
     setLoading(true)
+    setSize(null) // Reset size on product change
     supabase.from('products')
       .select('*, categories(name,slug), reviews(*, profiles(full_name,avatar_url))')
       .eq('slug', slug).eq('is_active', true).single()
       .then(({ data }) => {
         setProduct(data)
         setLoading(false)
+
+        // Auto-select if there is only 1 option or if one of the options is "Free Size"
+        if (data?.size_options?.length === 1) {
+          setSize(data.size_options[0])
+        } else if (data?.size_options?.length > 1) {
+          const freeSizeOpt = data.size_options.find(s => s.toLowerCase().replace(/\s+/g, '') === 'freesize')
+          if (freeSizeOpt) setSize(freeSizeOpt)
+        }
+
         if (data?.category_id) {
           supabase.from('products').select('*, categories(name,slug)')
             .eq('category_id', data.category_id).eq('is_active', true)

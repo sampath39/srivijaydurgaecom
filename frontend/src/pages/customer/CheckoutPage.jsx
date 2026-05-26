@@ -110,12 +110,12 @@ export default function CheckoutPage() {
   const specialDiscount = profile?.special_discount > 0
     ? Math.round((subtotal * profile.special_discount) / 100) : 0
   const discount  = couponData?.discount || 0
-  const pointsVal = pointsToUse * 0.1
+  const pointsVal = pointsToUse * 0.01
   const shipping  = selectedAddr
     ? calcShipping(selectedAddr.city, selectedAddr.pincode, subtotal, payMethod || 'online')
     : (subtotal > 999 ? 0 : 50)
   const total     = Math.max(0, subtotal - discount - pointsVal - specialDiscount + shipping)
-  const maxPoints = Math.min(profile?.reward_points || 0, (subtotal - discount - specialDiscount) * 10)
+  const maxPoints = Math.min(profile?.reward_points || 0, (subtotal - discount - specialDiscount) * 100)
 
   // Step logic
   const addrDone  = !!selectedAddr
@@ -273,7 +273,7 @@ export default function CheckoutPage() {
     }
   }
 
-  const handlePay = () => payMethod === 'cod' ? handleCOD() : handleOnlinePayment()
+  const handlePay = () => (payMethod === 'cod' || total === 0) ? handleCOD() : handleOnlinePayment()
   const setField = (k, v) => { setAddrForm(f => ({ ...f, [k]: v })); if (addrErrors[k]) setAddrErrors(e => ({ ...e, [k]: '' })) }
 
   // ─────────────────────────────────────────────────────────
@@ -556,13 +556,13 @@ export default function CheckoutPage() {
                 <span className="badge-blue ml-2">{profile.reward_points} pts</span>
               </h2>
               <div className="flex items-center gap-4">
-                <input type="range" min={0} max={maxPoints} step={10} value={pointsToUse} onChange={e => setPointsToUse(+e.target.value)} className="flex-1 accent-secondary-500" />
+                <input type="range" min={0} max={maxPoints} step={100} value={pointsToUse} onChange={e => setPointsToUse(+e.target.value)} className="flex-1 accent-secondary-500" />
                 <div className="text-right min-w-16">
                   <p className="font-bold text-secondary-600">{pointsToUse} pts</p>
                   <p className="text-xs text-gray-400">= ₹{pointsVal.toFixed(2)} off</p>
                 </div>
               </div>
-              <p className="text-xs text-gray-400 mt-2">1 point = ₹0.10 discount</p>
+              <p className="text-xs text-gray-400 mt-2">100 points = ₹1 discount</p>
             </motion.div>
           )}
 
@@ -667,6 +667,8 @@ export default function CheckoutPage() {
               >
                 {payLoading
                   ? <><Loader2 className="w-5 h-5 animate-spin" />Processing…</>
+                  : total === 0
+                    ? <><Gift className="w-5 h-5" />Pay with Points — ₹0</>
                   : payMethod === 'cod'
                     ? <><Banknote className="w-5 h-5" />Place COD Order — ₹{total.toLocaleString('en-IN')}</>
                     : <><CreditCard className="w-5 h-5" />Pay Online — ₹{total.toLocaleString('en-IN')}</>

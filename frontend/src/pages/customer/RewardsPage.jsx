@@ -43,7 +43,7 @@ export default function RewardsPage() {
           <p className="text-white/70 text-sm font-medium uppercase tracking-widest">Your Reward Balance</p>
           <motion.p key={balance} initial={{ scale: 1.3 }} animate={{ scale: 1 }}
             className="font-display text-6xl font-bold my-2">{balance.toLocaleString('en-IN')}</motion.p>
-          <p className="text-white/70 text-sm">points = ₹{(balance * 0.1).toFixed(2)} value</p>
+          <p className="text-white/70 text-sm">points = ₹{(balance * 0.01).toFixed(2)} value</p>
         </div>
       </motion.div>
 

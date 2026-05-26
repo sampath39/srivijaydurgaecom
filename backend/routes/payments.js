@@ -106,7 +106,7 @@ async function calculateOrderDetails({ user_id, cart_items, address_id, coupon_c
     .single()
 
   const usablePoints = Math.min(points_to_use, profile?.reward_points || 0)
-  pointsValue = usablePoints * 0.1
+  pointsValue = usablePoints * 0.01
 
   let specialDiscountAmount = 0
   if (profile?.special_discount > 0) {
@@ -400,8 +400,8 @@ router.post('/cod', auth, async (req, res) => {
       .insert({
         user_id:          req.user.id,
         status:           'confirmed',
-        payment_status:   'pending',
-        payment_method:   'cod',
+        payment_status:   details.totalAmount === 0 ? 'paid' : 'pending',
+        payment_method:   details.totalAmount === 0 ? 'points' : 'cod',
         subtotal:         details.subtotal,
         discount_amount:  details.discountAmount + details.specialDiscountAmount,
         points_used:      details.usablePoints,

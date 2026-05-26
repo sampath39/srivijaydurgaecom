@@ -291,8 +291,6 @@ export default function HomePage() {
           <div className="grid md:grid-cols-3 gap-6">
             {[
               { icon: '🏆', title: 'Earn Points', desc: '₹100 purchase = 10 reward points', link: '/rewards', color: 'from-primary-500 to-amber-600' },
-              { icon: '🎰', title: 'Spin & Win', desc: 'Daily spin wheel — win coupons & points!', link: '/rewards', color: 'from-secondary-500 to-purple-600' },
-              { icon: '📅', title: 'Daily Check-In', desc: 'Login daily and earn streak bonuses', link: '/rewards', color: 'from-accent-500 to-rose-600' },
             ].map((card, i) => (
               <motion.div key={card.title}
                 initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}

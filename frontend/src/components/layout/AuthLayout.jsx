@@ -19,7 +19,7 @@ export default function AuthLayout() {
           className="mb-8 text-center">
           <Link to="/" className="inline-block">
             <div className="flex items-center gap-3 justify-center">
-              <img src="/logo.png" alt="Logo" className="w-12 h-12 rounded-xl object-contain bg-white p-1" />
+              <img src="/durga-logo.png" alt="Logo" className="w-12 h-12 rounded-xl object-contain bg-white p-1" />
               <div className="text-left">
                 <p className="text-white font-display font-bold text-xl leading-tight">srivijaydurgakadhiemporeum</p>
               </div>

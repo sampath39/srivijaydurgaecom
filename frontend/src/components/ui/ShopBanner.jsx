@@ -2,16 +2,9 @@ import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import { Star, MapPin, Phone } from 'lucide-react'
 
-const LEFT_SAREES = [
-  { src: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=400&q=80', label: 'పట్టు చీర', sub: 'Silk Saree' },
-  { src: 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=400&q=80', label: 'కాంచీపురం చీర', sub: 'Kanchipuram Saree' },
-]
+const LEFT_SAREE = { src: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=400&q=80', label: 'పట్టు చీర', sub: 'Silk Saree' }
 
-const RIGHT_SAREES = [
-  { src: 'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=400&q=80', label: 'డ్రెస్ మెటీరియల్', sub: 'Dress Material' },
-  { src: 'https://images.unsplash.com/photo-1566174053879-31528523f8ae?w=400&q=80', label: 'కాది వస్త్రం', sub: 'Kadi Fabric' },
-  { src: 'https://images.unsplash.com/photo-1503944583220-79d8926ad5e2?w=400&q=80', label: 'దుప్పట్టా', sub: 'Dupatta' },
-]
+const RIGHT_SAREE = { src: 'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=400&q=80', label: 'డ్రెస్ మెటీరియల్', sub: 'Dress Material' }
 
 export default function ShopBanner() {
   return (
@@ -19,7 +12,7 @@ export default function ShopBanner() {
 
       <div className="shop-banner-inner">
 
-        {/* ── Left: 2 Saree Images ── */}
+        {/* ── Left: 1 Saree Image ── */}
         <motion.div
           className="shop-banner-left"
           initial={{ opacity: 0, x: -40 }}
@@ -27,22 +20,19 @@ export default function ShopBanner() {
           transition={{ duration: 0.7 }}
         >
           <div className="saree-col">
-            {LEFT_SAREES.map((s, i) => (
-              <motion.div
-                key={i}
-                className="saree-panel"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 + i * 0.15 }}
-                whileHover={{ scale: 1.03 }}
-              >
-                <img src={s.src} alt={s.sub} />
-                <div className="saree-panel-label">
-                  <span className="saree-telugu">{s.label}</span>
-                  <span className="saree-english">{s.sub}</span>
-                </div>
-              </motion.div>
-            ))}
+            <motion.div
+              className="saree-panel full-vertical"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              whileHover={{ scale: 1.03 }}
+            >
+              <img src={LEFT_SAREE.src} alt={LEFT_SAREE.sub} />
+              <div className="saree-panel-label">
+                <span className="saree-telugu">{LEFT_SAREE.label}</span>
+                <span className="saree-english">{LEFT_SAREE.sub}</span>
+              </div>
+            </motion.div>
           </div>
         </motion.div>
 
@@ -87,7 +77,7 @@ export default function ShopBanner() {
           </div>
         </motion.div>
 
-        {/* ── Right: 3 Saree Images ── */}
+        {/* ── Right: 1 Saree Image ── */}
         <motion.div
           className="shop-banner-right"
           initial={{ opacity: 0, x: 40 }}
@@ -95,22 +85,19 @@ export default function ShopBanner() {
           transition={{ duration: 0.7, delay: 0.1 }}
         >
           <div className="saree-col-right">
-            {RIGHT_SAREES.map((s, i) => (
-              <motion.div
-                key={i}
-                className="saree-panel-right"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 + i * 0.12 }}
-                whileHover={{ scale: 1.03 }}
-              >
-                <img src={s.src} alt={s.sub} />
-                <div className="saree-panel-label">
-                  <span className="saree-telugu">{s.label}</span>
-                  <span className="saree-english">{s.sub}</span>
-                </div>
-              </motion.div>
-            ))}
+            <motion.div
+              className="saree-panel-right full-vertical"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              whileHover={{ scale: 1.03 }}
+            >
+              <img src={RIGHT_SAREE.src} alt={RIGHT_SAREE.sub} />
+              <div className="saree-panel-label">
+                <span className="saree-telugu">{RIGHT_SAREE.label}</span>
+                <span className="saree-english">{RIGHT_SAREE.sub}</span>
+              </div>
+            </motion.div>
           </div>
         </motion.div>
 

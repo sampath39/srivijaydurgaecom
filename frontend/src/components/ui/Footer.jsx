@@ -72,15 +72,18 @@ export default function Footer() {
           <ul className="space-y-3">
             <li className="flex items-start gap-3">
               <MapPin className="w-4 h-4 text-primary-400 shrink-0 mt-0.5" />
-              <span className="text-sm text-gray-400">4/1, Arundelpet, Guntur, Andhra Pradesh - 522002</span>
+              <span className="text-sm text-gray-400">Arundelpet 4/1 opposite Kotak Mahindra Bank, Guntur, Andhra Pradesh, India PIN: 522001</span>
             </li>
             <li className="flex items-center gap-3">
               <Phone className="w-4 h-4 text-primary-400 shrink-0" />
-              <a href="tel:9493447776" className="text-sm text-gray-400 hover:text-primary-400">+91 94934 47776</a>
+              <div className="flex flex-col text-sm">
+                <a href="tel:9493447776" className="text-gray-400 hover:text-primary-400">+91 9493447776</a>
+                <a href="tel:6304258160" className="text-gray-400 hover:text-primary-400">+91 6304258160</a>
+              </div>
             </li>
             <li className="flex items-center gap-3">
               <Mail className="w-4 h-4 text-primary-400 shrink-0" />
-              <a href="mailto:info@svdke.com" className="text-sm text-gray-400 hover:text-primary-400">info@svdke.com</a>
+              <a href="mailto:sampath777yt@gmail.com" className="text-sm text-gray-400 hover:text-primary-400">sampath777yt@gmail.com</a>
             </li>
           </ul>
           <div className="mt-4 p-3 bg-white/5 rounded-xl">

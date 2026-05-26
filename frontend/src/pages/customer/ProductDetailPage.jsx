@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Heart, ShoppingCart, Star, Truck, Shield, RefreshCcw, Share2, ChevronLeft, ChevronRight, Zap, Plus, Minus } from 'lucide-react'
+import { Heart, ShoppingCart, Star, Truck, Shield, RefreshCcw, Share2, ChevronLeft, ChevronRight, Zap, Plus, Minus, X } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useDispatch, useSelector } from 'react-redux'
 import { addToCart, openCart } from '../../store/slices/cartSlice'
@@ -25,6 +25,8 @@ export default function ProductDetailPage() {
   const [reviewText, setReview]   = useState('')
   const [rating, setRating]       = useState(0)
   const [submitting, setSubmit]   = useState(false)
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false)
+  const [zoomScale, setZoomScale] = useState(1)
 
   const isWished = useSelector(selectIsWishlisted(product?.id))
 
@@ -124,7 +126,11 @@ export default function ProductDetailPage() {
         <div className="grid md:grid-cols-2 gap-10 lg:gap-16">
           {/* Images */}
           <div className="space-y-4">
-            <div className="relative aspect-square rounded-2xl overflow-hidden bg-gray-100 dark:bg-dark-700 group">
+            <div 
+              onClick={() => { setZoomScale(1); setIsLightboxOpen(true) }}
+              className="relative aspect-square rounded-2xl overflow-hidden bg-gray-100 dark:bg-dark-700 group cursor-zoom-in"
+              title="Click to Zoom Image"
+            >
               <AnimatePresence mode="wait">
                 <motion.img key={imgIdx}
                   initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -380,6 +386,71 @@ export default function ProductDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Lightbox Image Zoom Modal */}
+      <AnimatePresence>
+        {isLightboxOpen && (
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex flex-col items-center justify-center p-4"
+          >
+            {/* Close button */}
+            <button 
+              onClick={() => setIsLightboxOpen(false)}
+              className="absolute top-6 right-6 text-white hover:text-gray-300 bg-white/10 hover:bg-white/20 p-3 rounded-full transition-all cursor-pointer z-50 border-none"
+            >
+              <X className="w-6 h-6" />
+            </button>
+
+            {/* Zoom Controls */}
+            <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-white/10 backdrop-blur-md px-6 py-3 rounded-2xl border border-white/10 shadow-lg z-50">
+              <button 
+                onClick={() => setZoomScale(s => Math.max(0.5, s - 0.25))}
+                className="w-10 h-10 bg-white/10 hover:bg-white/20 text-white border-none rounded-xl flex items-center justify-center font-bold text-lg transition-all cursor-pointer"
+                title="Zoom Out"
+              >
+                <Minus className="w-5 h-5" />
+              </button>
+              <span className="text-white font-mono font-bold text-sm min-w-[60px] text-center">
+                {Math.round(zoomScale * 100)}%
+              </span>
+              <button 
+                onClick={() => setZoomScale(s => Math.min(3, s + 0.25))}
+                className="w-10 h-10 bg-white/10 hover:bg-white/20 text-white border-none rounded-xl flex items-center justify-center font-bold text-lg transition-all cursor-pointer"
+                title="Zoom In"
+              >
+                <Plus className="w-5 h-5" />
+              </button>
+              <button 
+                onClick={() => setZoomScale(1)}
+                className="text-xs text-primary-400 hover:text-primary-300 font-bold ml-2 transition-all cursor-pointer border-none bg-transparent"
+              >
+                Reset
+              </button>
+            </div>
+
+            {/* Image Container with Zoom support */}
+            <div className="w-full h-full max-w-4xl max-h-[85vh] flex items-center justify-center overflow-auto no-scrollbar">
+              <motion.img 
+                initial={{ scale: 0.95 }}
+                animate={{ scale: 1 }}
+                src={images[imgIdx]} 
+                alt={product.name} 
+                style={{ 
+                  transform: `scale(${zoomScale})`, 
+                  transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                  maxHeight: '100%',
+                  maxWidth: '100%',
+                  objectFit: 'contain'
+                }} 
+                className="rounded-lg shadow-2xl"
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

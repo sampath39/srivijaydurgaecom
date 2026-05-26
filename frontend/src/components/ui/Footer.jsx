@@ -10,7 +10,7 @@ export default function Footer() {
         {/* Brand */}
         <div className="md:col-span-1">
           <div className="flex items-center gap-3 mb-4">
-            <img src="/durga-logo.png" alt="Logo" className="w-10 h-10 rounded-xl object-contain bg-white p-1" />
+            <img src="/logo.png" alt="Logo" className="w-10 h-10 rounded-xl object-contain bg-white p-1" />
             <div>
               <p className="font-display font-bold text-white tracking-wide">Sri Vijaya Durga Kadi Emporium</p>
             </div>

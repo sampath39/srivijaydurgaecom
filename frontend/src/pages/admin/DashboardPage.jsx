@@ -12,12 +12,86 @@ const STATUS_COLORS = {
 }
 
 export default function AdminDashboard() {
-  const [data, setData]     = useState(null)
+  const [data, setData]       = useState(null)
   const [loading, setLoading] = useState(true)
+  const [sendingAlert, setSendingAlert] = useState(false)
+  const [whatsappMessage, setWhatsappMessage] = useState('🔥 Price dropped from ₹5999 → ₹4499. Sale offers available only 9 hours! Click here to grab your Kadi Saree now: http://localhost:3000')
+  const [usersList, setUsersList] = useState([])
+  const [selectedUserId, setSelectedUserId] = useState('')
+  const [discountPercent, setDiscountPercent] = useState('')
+  const [discountLoading, setDiscountLoading] = useState(false)
+
+  const handleApplySpecialDiscount = async () => {
+    if (!selectedUserId) {
+      import('react-hot-toast').then(({ default: toast }) => toast.error('Please select a customer'))
+      return
+    }
+    const percentNum = Number(discountPercent)
+    if (discountPercent === '' || isNaN(percentNum) || percentNum < 0 || percentNum > 100) {
+      import('react-hot-toast').then(({ default: toast }) => toast.error('Please enter a valid percentage between 0 and 100'))
+      return
+    }
+    setDiscountLoading(true)
+    try {
+      const foundUser = usersList.find(u => u.id === selectedUserId)
+      await api.put(`/admin/users/${selectedUserId}/special-discount`, {
+        special_discount: percentNum
+      })
+      
+      import('react-hot-toast').then(({ default: toast }) => {
+        toast.success(`Custom discount of ${percentNum}% applied to ${foundUser?.full_name || foundUser?.email}!`)
+      })
+      
+      // Update local state to reflect the updated discount in the dropdown list
+      setUsersList(prev => prev.map(u => u.id === selectedUserId ? { ...u, special_discount: percentNum } : u))
+      setDiscountPercent('')
+    } catch (err) {
+      import('react-hot-toast').then(({ default: toast }) => {
+        toast.error(err.response?.data?.message || err.message || 'Failed to apply discount')
+      })
+    } finally {
+      setDiscountLoading(false)
+    }
+  }
 
   useEffect(() => {
-    api.get('/admin/dashboard').then(({ data: d }) => { setData(d); setLoading(false) })
+    api.get('/admin/dashboard')
+      .then(({ data: d }) => { setData(d); setLoading(false) })
+      .catch(err => { 
+        console.error(err)
+        import('react-hot-toast').then(({ default: toast }) => toast.error('Failed to load dashboard'))
+        setLoading(false) 
+      })
+
+    api.get('/admin/users?limit=1000')
+      .then(({ data: res }) => {
+        setUsersList(res.data || [])
+      })
+      .catch(err => console.error('Failed to load users for dropdown:', err))
   }, [])
+
+  const handleSendAlert = async () => {
+    if (!window.confirm("Send Flash Sale WhatsApp alert to ALL customers? This will use your Twilio balance.")) return
+    setSendingAlert(true)
+    try {
+      const { data } = await api.post('/admin/whatsapp/send', {
+        recipientType: 'all',
+        mode: 'custom',
+        body: whatsappMessage
+      })
+      if (data.success) {
+        import('react-hot-toast').then(({ default: toast }) => {
+          toast.success(`Sent to ${data.summary.sent} users. Failed: ${data.summary.failed}`)
+        })
+      }
+    } catch (err) {
+      import('react-hot-toast').then(({ default: toast }) => {
+        toast.error(err.response?.data?.message || err.message || 'Failed to send alerts')
+      })
+    } finally {
+      setSendingAlert(false)
+    }
+  }
 
   // Build chart data from revenueData
   const chartData = (() => {
@@ -75,6 +149,74 @@ export default function AdminDashboard() {
             <p className="text-gray-400 text-xs mt-0.5">{stat.label}</p>
           </motion.div>
         ))}
+      </div>
+
+      {/* Quick Actions */}
+      <div className="card p-6 border-primary-500/30 bg-primary-50 dark:bg-primary-900/10">
+        <h2 className="font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+          ⚡ Quick Actions: WhatsApp Alerts
+        </h2>
+        <div className="flex flex-col gap-3 max-w-2xl">
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Message Content</label>
+          <textarea
+            value={whatsappMessage}
+            onChange={(e) => setWhatsappMessage(e.target.value)}
+            className="input resize-none h-24"
+            placeholder="Type your WhatsApp message here..."
+          />
+          <button 
+            onClick={handleSendAlert} 
+            disabled={sendingAlert || !whatsappMessage.trim()}
+            className="btn-primary text-sm shadow-[0_0_15px_rgba(245,158,11,0.4)] self-start mt-2"
+          >
+            {sendingAlert ? 'Sending...' : '📱 Send WhatsApp Alert (All Users)'}
+          </button>
+        </div>
+      </div>
+
+      {/* Special User Discount Manager */}
+      <div className="card p-6 border-secondary-500/30 bg-secondary-50 dark:bg-secondary-900/10">
+        <h2 className="font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+          🎁 Quick Actions: Custom Customer Discount
+        </h2>
+        <div className="grid md:grid-cols-3 gap-4 max-w-4xl">
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Select Customer</label>
+            <select
+              value={selectedUserId}
+              onChange={(e) => setSelectedUserId(e.target.value)}
+              className="input text-sm"
+            >
+              <option value="">-- Choose Customer --</option>
+              {usersList.map(u => (
+                <option key={u.id} value={u.id}>
+                  {u.full_name || 'No Name'} ({u.email}) {u.special_discount > 0 ? `[Current: ${u.special_discount}%]` : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Discount Percentage (%)</label>
+            <input
+              type="number"
+              min="0"
+              max="100"
+              value={discountPercent}
+              onChange={(e) => setDiscountPercent(e.target.value)}
+              className="input text-sm"
+              placeholder="e.g. 15"
+            />
+          </div>
+          <div className="flex items-end">
+            <button 
+              onClick={handleApplySpecialDiscount} 
+              disabled={discountLoading || !selectedUserId || discountPercent === ''}
+              className="btn-primary w-full text-sm shadow-[0_0_15px_rgba(245,158,11,0.4)]"
+            >
+              {discountLoading ? 'Applying...' : 'Apply Special Discount'}
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Revenue chart */}

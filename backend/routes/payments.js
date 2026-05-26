@@ -72,22 +72,28 @@ async function calculateOrderDetails({ user_id, cart_items, address_id, coupon_c
   let pointsValue = 0
   const { data: profile } = await supabase
     .from('profiles')
-    .select('reward_points')
+    .select('reward_points, special_discount')
     .eq('id', user_id)
     .single()
 
   const usablePoints = Math.min(points_to_use, profile?.reward_points || 0)
   pointsValue = usablePoints * 0.1 // 1 point = ₹0.10
 
+  let specialDiscountAmount = 0
+  if (profile?.special_discount > 0) {
+    specialDiscountAmount = Math.round((subtotal * profile.special_discount) / 100)
+  }
+
   // 5. Calculate total
   const shippingCharge = subtotal > 999 ? 0 : 50
-  const totalAmount = Math.max(0, subtotal - discountAmount - pointsValue + shippingCharge)
+  const totalAmount = Math.max(0, subtotal - discountAmount - pointsValue - specialDiscountAmount + shippingCharge)
 
   return {
     address,
     validatedItems,
     subtotal,
     discountAmount,
+    specialDiscountAmount,
     couponId,
     usablePoints,
     pointsValue,
@@ -156,7 +162,8 @@ router.post('/create-order', auth, async (req, res) => {
       },
       address:           details.address,
       subtotal:          details.subtotal,
-      discount_amount:   details.discountAmount,
+      discount_amount:   details.discountAmount + details.specialDiscountAmount,
+      special_discount_amount: details.specialDiscountAmount,
       points_value:      details.pointsValue,
       shipping_charge:   details.shippingCharge,
       total_amount:      details.totalAmount,
@@ -210,7 +217,7 @@ router.post('/verify', auth, async (req, res) => {
         payment_status:   'paid',
         payment_method:   'razorpay',
         subtotal:         details.subtotal,
-        discount_amount:  details.discountAmount,
+        discount_amount:  details.discountAmount + details.specialDiscountAmount,
         points_used:      details.usablePoints,
         points_value:     details.pointsValue,
         shipping_charge:  details.shippingCharge,

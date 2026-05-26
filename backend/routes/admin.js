@@ -91,6 +91,20 @@ router.get('/users', auth, adminOnly, async (req, res) => {
   } catch (err) { res.status(500).json({ success: false, message: err.message }) }
 })
 
+// PUT /api/admin/users/:id/special-discount
+router.put('/users/:id/special-discount', auth, adminOnly, async (req, res) => {
+  try {
+    const { special_discount } = req.body
+    const { data, error } = await supabase.from('profiles')
+      .update({ special_discount: Number(special_discount) })
+      .eq('id', req.params.id)
+      .select()
+      .single()
+    if (error) throw error
+    res.json({ success: true, data })
+  } catch (err) { res.status(500).json({ success: false, message: err.message }) }
+})
+
 // GET /api/admin/inventory
 router.get('/inventory', auth, adminOnly, async (_req, res) => {
   try {

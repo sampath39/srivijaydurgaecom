@@ -4,7 +4,7 @@ import { Provider } from 'react-redux'
 import { Toaster } from 'react-hot-toast'
 import store from './store'
 import { supabase } from './lib/supabase'
-import { setUser, setProfile, clearAuth, setLoading } from './store/slices/authSlice'
+import { setUser, setProfile, clearAuth, setLoading, setSession } from './store/slices/authSlice'
 import { loadCart } from './store/slices/cartSlice'
 import { setWishlist } from './store/slices/wishlistSlice'
 
@@ -62,6 +62,8 @@ function PageLoader() {
 
 function AppInner() {
   useEffect(() => {
+    document.documentElement.classList.add('dark');
+
     // Restore cart from localStorage
     const saved = localStorage.getItem('svdke_cart')
     if (saved) {
@@ -82,7 +84,7 @@ function AppInner() {
       try {
         const { data: { session } } = await supabase.auth.getSession()
         if (session?.user) {
-          store.dispatch(setUser(session.user))
+          store.dispatch(setSession(session))
           const { data: profile } = await supabase
             .from('profiles').select('*').eq('id', session.user.id).single()
           if (profile) store.dispatch(setProfile(profile))
@@ -99,9 +101,9 @@ function AppInner() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT' || !session) {
         store.dispatch(clearAuth())
+      } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        store.dispatch(setSession(session))
       }
-      // SIGNED_IN is handled by LoginPage which dispatches to Redux directly
-      // before navigating, so AdminRoute already sees the correct state.
     })
     return () => subscription.unsubscribe()
   }, [])

@@ -6,6 +6,41 @@ import App from './App.jsx'
 import { store } from './store/index.js'
 import './index.css'
 
+// Global error overlay for debugging browser errors
+window.onerror = function (message, source, lineno, colno, error) {
+  const errDiv = document.createElement('div')
+  errDiv.style.position = 'fixed'
+  errDiv.style.top = '0'
+  errDiv.style.left = '0'
+  errDiv.style.width = '100%'
+  errDiv.style.background = '#ef4444'
+  errDiv.style.color = 'white'
+  errDiv.style.padding = '12px'
+  errDiv.style.zIndex = '999999'
+  errDiv.style.fontSize = '14px'
+  errDiv.style.fontWeight = 'bold'
+  errDiv.style.fontFamily = 'monospace'
+  errDiv.innerText = `Error: ${message} at ${source}:${lineno}:${colno}`
+  document.body.appendChild(errDiv)
+}
+
+window.addEventListener('unhandledrejection', function (event) {
+  const errDiv = document.createElement('div')
+  errDiv.style.position = 'fixed'
+  errDiv.style.bottom = '0'
+  errDiv.style.left = '0'
+  errDiv.style.width = '100%'
+  errDiv.style.background = '#991b1b'
+  errDiv.style.color = 'white'
+  errDiv.style.padding = '12px'
+  errDiv.style.zIndex = '999999'
+  errDiv.style.fontSize = '14px'
+  errDiv.style.fontWeight = 'bold'
+  errDiv.style.fontFamily = 'monospace'
+  errDiv.innerText = `Promise Rejection: ${event.reason?.message || event.reason}`
+  document.body.appendChild(errDiv)
+})
+
 // Apply saved dark mode immediately
 if (localStorage.getItem('svdke_dark') === 'true') {
   document.documentElement.classList.add('dark')

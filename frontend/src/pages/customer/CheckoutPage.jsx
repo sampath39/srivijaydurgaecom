@@ -55,11 +55,12 @@ export default function CheckoutPage() {
   const [pointsToUse, setPointsToUse]    = useState(0)
   const [payLoading, setPayLoading]      = useState(false)
 
+  const specialDiscount = profile?.special_discount > 0 ? Math.round((subtotal * profile.special_discount) / 100) : 0
   const discount  = couponData?.discount || 0
   const pointsVal = pointsToUse * 0.1
   const shipping  = subtotal > 999 ? 0 : 50
-  const total     = Math.max(0, subtotal - discount - pointsVal + shipping)
-  const maxPoints = Math.min(profile?.reward_points || 0, (subtotal - discount) * 10)
+  const total     = Math.max(0, subtotal - discount - pointsVal - specialDiscount + shipping)
+  const maxPoints = Math.min(profile?.reward_points || 0, (subtotal - discount - specialDiscount) * 10)
 
   // ── Load saved addresses ─────────────────────────────────────
   useEffect(() => {
@@ -543,6 +544,12 @@ export default function CheckoutPage() {
                 <div className="flex justify-between text-green-600">
                   <span>Coupon ({couponData?.coupon?.code})</span>
                   <span>-₹{discount}</span>
+                </div>
+              )}
+              {specialDiscount > 0 && (
+                <div className="flex justify-between text-indigo-600 dark:text-indigo-400 font-semibold animate-pulse">
+                  <span>Special Customer Discount ({profile.special_discount}%)</span>
+                  <span>-₹{specialDiscount}</span>
                 </div>
               )}
               {pointsVal > 0 && (

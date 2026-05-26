@@ -8,7 +8,7 @@ import { Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react'
 import { FaGoogle } from 'react-icons/fa'
 import { supabase } from '../../lib/supabase'
 import store from '../../store'
-import { setUser, setProfile, setLoading } from '../../store/slices/authSlice'
+import { setUser, setProfile, setLoading, setSession } from '../../store/slices/authSlice'
 import toast from 'react-hot-toast'
 
 const schema = z.object({
@@ -58,7 +58,7 @@ export default function LoginPage() {
         // ── Dispatch to Redux BEFORE navigate ──────────────────────
         // This ensures AdminRoute already sees user + isAdmin + loading=false
         // the instant it first renders, preventing the redirect-to-home bug.
-        store.dispatch(setUser(authData.user))
+        store.dispatch(setSession(authData.session))
         if (profile) store.dispatch(setProfile(profile))
         store.dispatch(setLoading(false))
 

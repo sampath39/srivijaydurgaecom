@@ -162,7 +162,7 @@ export default function Navbar() {
               </button>
 
               {/* Dark mode */}
-              <button onClick={() => dispatch(toggleDarkMode())} className="btn-ghost p-2 hidden sm:flex">
+              <button onClick={() => dispatch(toggleDarkMode())} className="btn-ghost p-2 flex">
                 {darkMode ? <Sun className="w-5 h-5 text-primary-400" /> : <Moon className="w-5 h-5" />}
               </button>
 
@@ -305,6 +305,11 @@ export default function Navbar() {
                 >
                   <span>🏠</span>Home
                 </Link>
+                <button onClick={() => dispatch(toggleDarkMode())}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-dark-700 text-gray-700 dark:text-gray-200 text-sm font-medium text-left border-none bg-transparent cursor-pointer"
+                >
+                  <span>{darkMode ? '☀️' : '🌙'}</span> {darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+                </button>
                 {CATEGORIES.map(cat => (
                   <Link key={cat.slug} to={`/products?category=${cat.slug}`}
                     onClick={() => setMobileOpen(false)}

@@ -93,7 +93,10 @@ export default function AdminUsersPage() {
       const { data } = await api.get(`/admin/users?page=${page}&limit=${LIMIT}&search=${search}`)
       setUsers(data.data || [])
       setTotal(data.count || 0)
-    } catch {}
+    } catch (err) {
+      console.error('Failed to load users:', err)
+      toast.error(err.response?.data?.message || err.message || 'Failed to load customers')
+    }
     setLoading(false)
   }
 

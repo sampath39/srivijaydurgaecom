@@ -17,8 +17,9 @@ export default function InventoryPage() {
     try {
       const { data } = await api.get('/admin/inventory')
       setProducts(data.data || [])
-    } catch {
-      toast.error('Failed to load inventory')
+    } catch (err) {
+      console.error('Inventory load error:', err)
+      toast.error(err.response?.data?.message || err.message || 'Failed to load inventory')
     } finally {
       setLoading(false)
     }

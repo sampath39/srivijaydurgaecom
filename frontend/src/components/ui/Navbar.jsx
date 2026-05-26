@@ -84,7 +84,7 @@ export default function Navbar() {
     <>
       {/* Top announcement bar */}
       <div className="bg-gradient-gold text-white text-center text-xs py-1.5 px-4 font-medium">
-        🎉 Free shipping on orders above ₹999 | Call us: 9493447776 | Arundelpet, Guntur
+        🎉 Free shipping on orders above ₹999 | Owner: Eswar Rao | Call us: 9493447776 | Arundelpet, Guntur
       </div>
 
       <nav className={`sticky top-0 z-50 transition-all duration-300 ${
@@ -97,10 +97,10 @@ export default function Navbar() {
 
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2.5 shrink-0">
-              <img src="/durga-logo.png" alt="srivijaydurgakadhiemporeum Logo" className="w-12 h-12 rounded-xl object-contain drop-shadow-md bg-gradient-to-br from-amber-50 to-white dark:from-dark-800 dark:to-dark-900 border border-amber-200 dark:border-dark-700" />
+              <img src="/durga-logo.png" alt="Sri Vijaya Durga Kadi Emporium Logo" className="w-12 h-12 rounded-xl object-contain drop-shadow-md bg-gradient-to-br from-amber-50 to-white dark:from-dark-800 dark:to-dark-900 border border-amber-200 dark:border-dark-700" />
               <div className="hidden sm:block">
-                <p className="font-display font-bold text-gray-900 dark:text-white leading-tight text-sm">
-                  srivijaydurgakadhiemporeum
+                <p className="font-display font-bold text-gray-900 dark:text-white leading-tight text-sm tracking-wide">
+                  Sri Vijaya Durga Kadi Emporium
                 </p>
               </div>
             </Link>

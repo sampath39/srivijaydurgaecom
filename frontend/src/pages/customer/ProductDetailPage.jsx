@@ -327,7 +327,7 @@ export default function ProductDetailPage() {
                     <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Your Rating</p>
                     <div className="flex gap-1">
                       {[1,2,3,4,5].map(s => (
-                        <button key={s} onClick={() => setRating(s)}>
+                        <button key={s} onClick={() => setRating(prev => prev === s ? 0 : s)}>
                           <Star className={`w-8 h-8 transition-colors ${s <= rating ? 'text-primary-400 fill-primary-400' : 'text-gray-300 hover:text-primary-300'}`} />
                         </button>
                       ))}

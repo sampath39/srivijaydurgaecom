@@ -15,11 +15,32 @@ module.exports = async function authMiddleware(req, res, next) {
     }
 
     // Fetch profile for role info
-    const { data: profile } = await supabase
+    let { data: profile } = await supabase
       .from('profiles')
       .select('id, email, role, full_name, reward_points')
       .eq('id', user.id)
-      .single()
+      .maybeSingle()
+
+    if (!profile) {
+      // Self-heal: Create profile record if missing
+      const fullName = user.user_metadata?.full_name || user.email.split('@')[0]
+      const phone = user.user_metadata?.phone || ''
+      const { data: newProfile, error: createError } = await supabase
+        .from('profiles')
+        .insert({
+          id: user.id,
+          email: user.email,
+          full_name: fullName,
+          phone: phone,
+          role: 'customer'
+        })
+        .select()
+        .maybeSingle()
+
+      if (!createError && newProfile) {
+        profile = newProfile
+      }
+    }
 
     req.user    = user
     req.profile = profile

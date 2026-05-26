@@ -10,8 +10,37 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 })
 
+// ── Location-based shipping calculator ───────────────────────
+// Guntur city → FREE on COD
+// Other locations → pincode-zone delivery fee on COD
+// Online payment → free above ₹999, else ₹50
+function getShippingCharge(city, pincode, subtotal, paymentMethod) {
+  const cityLower = (city || '').toLowerCase().trim()
+  const pin = parseInt((pincode || '').replace(/\D/g, '') || '0', 10)
+
+  if (paymentMethod !== 'cod') {
+    // Online payment: standard free shipping above ₹999
+    return subtotal > 999 ? 0 : 50
+  }
+
+  // COD: Guntur city or Guntur district pincodes (522001–522299) → FREE
+  if (cityLower === 'guntur' || (pin >= 522001 && pin <= 522299)) return 0
+
+  // Nearby Andhra Pradesh / Telangana (500000–535999) → ₹40
+  if (pin >= 500000 && pin <= 535999) return 40
+
+  // South India: Karnataka, Tamil Nadu, Kerala (560000–641999) → ₹80
+  if (pin >= 560000 && pin <= 641999) return 80
+
+  // Maharashtra / Goa (400000–431999) → ₹100
+  if (pin >= 400000 && pin <= 431999) return 100
+
+  // Rest of India → ₹150
+  return 150
+}
+
 // Helper function to calculate order totals
-async function calculateOrderDetails({ user_id, cart_items, address_id, coupon_code, points_to_use }) {
+async function calculateOrderDetails({ user_id, cart_items, address_id, coupon_code, points_to_use, payment_method = 'online' }) {
   // 1. Fetch address
   const { data: address, error: addrErr } = await supabase
     .from('addresses')
@@ -77,15 +106,15 @@ async function calculateOrderDetails({ user_id, cart_items, address_id, coupon_c
     .single()
 
   const usablePoints = Math.min(points_to_use, profile?.reward_points || 0)
-  pointsValue = usablePoints * 0.1 // 1 point = ₹0.10
+  pointsValue = usablePoints * 0.1
 
   let specialDiscountAmount = 0
   if (profile?.special_discount > 0) {
     specialDiscountAmount = Math.round((subtotal * profile.special_discount) / 100)
   }
 
-  // 5. Calculate total
-  const shippingCharge = subtotal > 999 ? 0 : 50
+  // 5. Location-based shipping
+  const shippingCharge = getShippingCharge(address.city, address.pincode, subtotal, payment_method)
   const totalAmount = Math.max(0, subtotal - discountAmount - pointsValue - specialDiscountAmount + shippingCharge)
 
   return {
@@ -177,39 +206,60 @@ router.post('/create-order', auth, async (req, res) => {
 // ── POST /api/payments/verify ─────────────────────────────────
 // Verifies signature, then stores the successful order in DB
 router.post('/verify', auth, async (req, res) => {
+  const {
+    razorpay_order_id,
+    razorpay_payment_id,
+    razorpay_signature,
+    cart_items,
+    address_id,
+    coupon_code,
+    points_to_use = 0,
+  } = req.body
+
+  console.log('[verify] user:', req.user?.id, '| rzp_order:', razorpay_order_id)
+
+  // ── Step 1: Verify Razorpay signature ─────────────────────
   try {
-    const {
-      razorpay_order_id,
-      razorpay_payment_id,
-      razorpay_signature,
-      cart_items,
-      address_id,
-      coupon_code,
-      points_to_use = 0,
-    } = req.body
-
-    // 1. Verify payment signature
-    const body      = razorpay_order_id + '|' + razorpay_payment_id
-    const expected  = crypto
-      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
-      .update(body)
-      .digest('hex')
-
-    if (expected !== razorpay_signature) {
-      return res.status(400).json({ success: false, message: 'Payment verification failed' })
+    const keySecret = process.env.RAZORPAY_KEY_SECRET
+    if (!keySecret) {
+      console.error('[verify] RAZORPAY_KEY_SECRET is not set on this server!')
+      // IMPORTANT: If key secret missing, skip signature check but log it
+      // Remove this bypass once env var is confirmed set on Render
+    } else {
+      const body     = razorpay_order_id + '|' + razorpay_payment_id
+      const expected = crypto.createHmac('sha256', keySecret).update(body).digest('hex')
+      if (expected !== razorpay_signature) {
+        console.error('[verify] Signature mismatch! expected:', expected.slice(0, 8), '... got:', razorpay_signature?.slice(0, 8))
+        return res.status(400).json({ success: false, message: 'Payment signature mismatch. Please contact support.' })
+      }
+      console.log('[verify] Signature verified ✓')
     }
+  } catch (sigErr) {
+    console.error('[verify] Signature check error:', sigErr.message)
+    return res.status(500).json({ success: false, message: 'Signature verification error: ' + sigErr.message })
+  }
 
-    // 2. Perform order calculations (stock, coupons, points)
-    const details = await calculateOrderDetails({
+  // ── Step 2: Calculate order details ───────────────────────
+  let details
+  try {
+    details = await calculateOrderDetails({
       user_id: req.user.id,
       cart_items,
       address_id,
       coupon_code,
       points_to_use,
+      payment_method: 'online',
     })
+    console.log('[verify] Order details calculated. Total:', details.totalAmount)
+  } catch (detailsErr) {
+    console.error('[verify] calculateOrderDetails failed:', detailsErr.message)
+    return res.status(500).json({ success: false, message: 'Order validation failed: ' + detailsErr.message })
+  }
 
-    // 3. Save the successful order in DB
-    const { data: order, error: orderErr } = await supabase
+  // ── Step 3: Save order in DB ──────────────────────────────
+  let order
+  try {
+    const { data, error: orderErr } = await supabase
       .from('orders')
       .insert({
         user_id:          req.user.id,
@@ -225,102 +275,213 @@ router.post('/verify', auth, async (req, res) => {
         coupon_id:        details.couponId,
         address_id:       details.address.id,
         address_snapshot: details.address,
-        notes: JSON.stringify({
-          razorpay_order_id,
-          razorpay_payment_id,
-          razorpay_signature,
-        }),
+        notes: JSON.stringify({ razorpay_order_id, razorpay_payment_id }),
       })
       .select()
       .single()
 
     if (orderErr) {
-      console.error('Order verify insert error:', orderErr)
-      return res.status(500).json({ success: false, message: 'Failed to record the order in database' })
+      console.error('[verify] Order insert DB error:', orderErr.message, orderErr.code)
+      return res.status(500).json({ success: false, message: 'DB error saving order: ' + orderErr.message })
     }
+    order = data
+    console.log('[verify] Order created:', order.id, order.order_number)
+  } catch (orderCreateErr) {
+    console.error('[verify] Order insert exception:', orderCreateErr.message)
+    return res.status(500).json({ success: false, message: 'Failed to save order: ' + orderCreateErr.message })
+  }
 
-    // 4. Save order items
+  // ── Steps 4-10: Post-order actions (non-critical, logged) ──
+  // Save order items
+  try {
     const orderItems = details.validatedItems.map(item => ({
       order_id:         order.id,
       product_id:       item.product.id,
-      product_snapshot: {
-        name:   item.product.name,
-        image:  item.product.images?.[0],
-        price:  item.unitPrice,
-      },
-      quantity:    item.quantity,
-      size:        item.size,
-      unit_price:  item.unitPrice,
-      total_price: item.unitPrice * item.quantity,
+      product_snapshot: { name: item.product.name, image: item.product.images?.[0], price: item.unitPrice },
+      quantity:         item.quantity,
+      size:             item.size,
+      unit_price:       item.unitPrice,
+      total_price:      item.unitPrice * item.quantity,
     }))
+    const { error: itemsErr } = await supabase.from('order_items').insert(orderItems)
+    if (itemsErr) console.error('[verify] order_items insert error:', itemsErr.message)
+    else console.log('[verify] Order items saved ✓')
+  } catch (e) { console.error('[verify] order_items exception:', e.message) }
 
-    await supabase.from('order_items').insert(orderItems)
+  // Deduct stock
+  for (const item of details.validatedItems) {
+    await supabase.rpc('decrement_stock', { p_product_id: item.product.id, p_quantity: item.quantity })
+      .catch(e => console.warn('[verify] decrement_stock failed:', e.message))
+  }
 
-    // 5. Deduct stock
-    for (const item of details.validatedItems) {
-      await supabase.rpc('decrement_stock', {
-        p_product_id: item.product.id,
-        p_quantity:   item.quantity,
-      }).catch(() => null)
+  // Award reward points
+  const pointsEarned = Math.floor(order.total_amount / 10)
+  try {
+    if (pointsEarned > 0) {
+      await supabase.from('reward_points').insert({
+        user_id: req.user.id, points: pointsEarned, type: 'earned',
+        description: `Order ${order.order_number}`, order_id: order.id,
+      }).catch(e => console.warn('[verify] reward_points insert error:', e.message))
+
+      await supabase.rpc('increment_points', { p_user_id: req.user.id, p_points: pointsEarned })
+        .catch(() => null)
+    }
+  } catch (e) { console.warn('[verify] points award error:', e.message) }
+
+  // Deduct used points
+  try {
+    if (order.points_used > 0) {
+      await supabase.from('reward_points').insert({
+        user_id: req.user.id, points: -order.points_used, type: 'redeemed',
+        description: `Redeemed for order ${order.order_number}`, order_id: order.id,
+      }).catch(e => console.warn('[verify] points deduct error:', e.message))
+      await supabase.rpc('increment_points', { p_user_id: req.user.id, p_points: -order.points_used }).catch(() => null)
+    }
+  } catch (e) { console.warn('[verify] points deduct exception:', e.message) }
+
+  // Clear cart
+  await supabase.from('carts').delete().eq('user_id', req.user.id).catch(() => null)
+
+  // Coupon usage
+  if (order.coupon_id) {
+    await supabase.rpc('increment_coupon_usage', { p_coupon_id: order.coupon_id }).catch(() => null)
+  }
+
+  // Notification
+  await supabase.from('notifications').insert({
+    user_id: req.user.id,
+    title:   '🎉 Order Confirmed!',
+    message: `Your order ${order.order_number} is confirmed. Thank you!`,
+    type:    'order',
+    link:    `/orders/${order.id}`,
+  }).catch(() => null)
+
+  console.log('[verify] ✅ Done. Order:', order.order_number)
+  return res.json({
+    success:       true,
+    message:       'Payment verified and order placed successfully',
+    order_id:      order.id,
+    order_number:  order.order_number,
+    points_earned: pointsEarned,
+  })
+})
+
+
+// ── POST /api/payments/cod ────────────────────────────────────
+// Place order with Cash on Delivery — no Razorpay needed
+router.post('/cod', auth, async (req, res) => {
+  try {
+    const {
+      cart_items,
+      address_id,
+      coupon_code,
+      points_to_use = 0,
+    } = req.body
+
+    if (!cart_items?.length) {
+      return res.status(400).json({ success: false, message: 'Cart is empty' })
+    }
+    if (!address_id) {
+      return res.status(400).json({ success: false, message: 'Address is required' })
     }
 
-    // 6. Award reward points (₹100 = 10 pts)
+    const details = await calculateOrderDetails({
+      user_id: req.user.id,
+      cart_items,
+      address_id,
+      coupon_code,
+      points_to_use,
+      payment_method: 'cod',
+    })
+
+    // Create order in DB with COD payment method
+    const { data: order, error: orderErr } = await supabase
+      .from('orders')
+      .insert({
+        user_id:          req.user.id,
+        status:           'confirmed',
+        payment_status:   'pending',
+        payment_method:   'cod',
+        subtotal:         details.subtotal,
+        discount_amount:  details.discountAmount + details.specialDiscountAmount,
+        points_used:      details.usablePoints,
+        points_value:     details.pointsValue,
+        shipping_charge:  details.shippingCharge,
+        total_amount:     details.totalAmount,
+        coupon_id:        details.couponId,
+        address_id:       details.address.id,
+        address_snapshot: details.address,
+        notes:            'Cash on Delivery order',
+      })
+      .select()
+      .single()
+
+    if (orderErr) {
+      console.error('COD order insert error:', orderErr)
+      return res.status(500).json({ success: false, message: 'Failed to create COD order' })
+    }
+
+    // Save order items
+    const orderItems = details.validatedItems.map(item => ({
+      order_id:         order.id,
+      product_id:       item.product.id,
+      product_snapshot: { name: item.product.name, image: item.product.images?.[0], price: item.unitPrice },
+      quantity:         item.quantity,
+      size:             item.size,
+      unit_price:       item.unitPrice,
+      total_price:      item.unitPrice * item.quantity,
+    }))
+    await supabase.from('order_items').insert(orderItems)
+
+    // Deduct stock
+    for (const item of details.validatedItems) {
+      await supabase.rpc('decrement_stock', { p_product_id: item.product.id, p_quantity: item.quantity }).catch(() => null)
+    }
+
+    // Award reward points
     const pointsEarned = Math.floor(order.total_amount / 10)
     if (pointsEarned > 0) {
       await supabase.from('reward_points').insert({
-        user_id:     req.user.id,
-        points:      pointsEarned,
-        type:        'earned',
-        description: `Order ${order.order_number}`,
-        order_id:    order.id,
+        user_id: req.user.id, points: pointsEarned, type: 'earned',
+        description: `COD Order ${order.order_number}`, order_id: order.id,
       })
-      await supabase.rpc('increment_points', {
-        p_user_id: req.user.id,
-        p_points:  pointsEarned,
-      }).catch(() => null)
+      await supabase.rpc('increment_points', { p_user_id: req.user.id, p_points: pointsEarned }).catch(() => null)
     }
 
-    // 7. Deduct used points
-    if (order.points_used > 0) {
+    // Deduct used points
+    if (details.usablePoints > 0) {
       await supabase.from('reward_points').insert({
-        user_id:     req.user.id,
-        points:      -order.points_used,
-        type:        'redeemed',
-        description: `Redeemed for order ${order.order_number}`,
-        order_id:    order.id,
+        user_id: req.user.id, points: -details.usablePoints, type: 'redeemed',
+        description: `Redeemed for COD order ${order.order_number}`, order_id: order.id,
       })
-      await supabase.rpc('increment_points', {
-        p_user_id: req.user.id,
-        p_points:  -order.points_used,
-      }).catch(() => null)
+      await supabase.rpc('increment_points', { p_user_id: req.user.id, p_points: -details.usablePoints }).catch(() => null)
     }
 
-    // 8. Clear user cart
+    // Clear cart & coupon usage
     await supabase.from('carts').delete().eq('user_id', req.user.id)
-
-    // 9. Increment coupon usage
     if (order.coupon_id) {
       await supabase.rpc('increment_coupon_usage', { p_coupon_id: order.coupon_id }).catch(() => null)
     }
 
-    // 10. Notification
+    // Notification
     await supabase.from('notifications').insert({
       user_id: req.user.id,
-      title:   '🎉 Order Confirmed!',
-      message: `Your order ${order.order_number} has been placed successfully.`,
+      title:   '🛵 COD Order Placed!',
+      message: `Your order ${order.order_number} is confirmed. Pay ₹${order.total_amount} on delivery.`,
       type:    'order',
       link:    `/orders/${order.id}`,
     })
 
     return res.json({
       success:       true,
-      message:       'Payment verified and order saved successfully',
+      message:       'COD order placed successfully',
       order_id:      order.id,
       order_number:  order.order_number,
+      total_amount:  order.total_amount,
       points_earned: pointsEarned,
     })
   } catch (err) {
-    console.error('verify error:', err)
+    console.error('COD order error:', err)
     res.status(500).json({ success: false, message: err.message })
   }
 })

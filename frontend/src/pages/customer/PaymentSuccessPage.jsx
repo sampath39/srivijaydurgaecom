@@ -49,6 +49,7 @@ export default function PaymentSuccessPage() {
   const order_id      = state?.order_id      || ''
   const total_amount  = state?.total_amount  || 0
   const points_earned = state?.points_earned || 0
+  const is_cod        = state?.is_cod        || false
 
   useEffect(() => {
     if (!launched.current) { launchConfetti(); launched.current = true }
@@ -68,10 +69,12 @@ export default function PaymentSuccessPage() {
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
           <h1 className="font-display text-4xl font-bold text-gray-900 dark:text-white mb-3">
-            Order Placed! 🎉
+            {is_cod ? 'Order Placed! 🛵' : 'Order Placed! 🎉'}
           </h1>
           <p className="text-gray-500 dark:text-gray-400 text-lg mb-8">
-            Thank you for your purchase! Your order has been confirmed.
+            {is_cod
+              ? 'Your order is confirmed! Pay cash when it arrives at your door.'
+              : 'Thank you for your purchase! Payment received successfully.'}
           </p>
         </motion.div>
 
@@ -83,10 +86,13 @@ export default function PaymentSuccessPage() {
               <p className="text-xs text-gray-400 uppercase tracking-wider">Order Number</p>
               <p className="font-bold text-lg text-primary-600 font-mono">{order_number}</p>
             </div>
-            <div className="text-right">
-              <p className="text-xs text-gray-400 uppercase tracking-wider">Amount Paid</p>
-              <p className="font-bold text-xl text-gray-900 dark:text-white">₹{Number(total_amount).toLocaleString('en-IN')}</p>
-            </div>
+              <div className="text-right">
+                <p className="text-xs text-gray-400 uppercase tracking-wider">
+                  {is_cod ? 'Amount to Pay on Delivery' : 'Amount Paid'}
+                </p>
+                <p className="font-bold text-xl text-gray-900 dark:text-white">₹{Number(total_amount).toLocaleString('en-IN')}</p>
+                {is_cod && <p className="text-xs text-amber-600 font-semibold mt-0.5">💵 Pay cash on delivery</p>}
+              </div>
           </div>
 
           <div className="border-t border-gray-100 dark:border-dark-700 pt-4">

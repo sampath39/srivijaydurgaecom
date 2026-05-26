@@ -14,34 +14,6 @@ router.get('/balance', auth, async (req, res) => {
   } catch (err) { res.status(500).json({ success: false, message: err.message }) }
 })
 
-// POST /api/rewards/checkin — Daily check-in
-router.post('/checkin', auth, async (req, res) => {
-  try {
-    const today = new Date().toISOString().split('T')[0]
-    const { data: existing } = await supabase.from('daily_checkins')
-      .select('id').eq('user_id', req.user.id).eq('checkin_date', today).single()
-    if (existing) return res.status(400).json({ success: false, message: 'Already checked in today' })
-
-    // Get streak
-    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
-    const { data: prevCheckin } = await supabase.from('daily_checkins')
-      .select('streak_days').eq('user_id', req.user.id).eq('checkin_date', yesterday).single()
-    const streak = (prevCheckin?.streak_days || 0) + 1
-    const points = Math.min(5 + (streak - 1) * 2, 25) // max 25 pts/day
-
-    await supabase.from('daily_checkins').insert({
-      user_id: req.user.id, checkin_date: today, points_earned: points, streak_days: streak
-    })
-    await supabase.from('reward_points').insert({
-      user_id: req.user.id, points, type: 'checkin', description: `Day ${streak} streak check-in`
-    })
-    await supabase.from('profiles').update({ reward_points: supabase.raw('reward_points + ' + points) })
-      .eq('id', req.user.id)
-
-    res.json({ success: true, points_earned: points, streak, message: `+${points} points! Day ${streak} streak 🎉` })
-  } catch (err) { res.status(500).json({ success: false, message: err.message }) }
-})
-
 // POST /api/rewards/spin — Spin wheel (once per day)
 router.post('/spin', auth, async (req, res) => {
   try {
@@ -77,14 +49,17 @@ router.post('/spin', auth, async (req, res) => {
       await supabase.from('reward_points').insert({
         user_id: req.user.id, points: pts, type: 'spin', description: `Spin wheel reward`
       })
-      await supabase.from('profiles')
-        .update({ reward_points: supabase.raw('reward_points + ' + pts) }).eq('id', req.user.id)
+      await supabase.rpc('increment_points', {
+        p_user_id: req.user.id,
+        p_points:  pts
+      }).catch(() => null)
     }
 
     if (selected.type === 'coupon') {
+      const pctValue = selected.value === 'SPIN20' ? 20 : 10
       // Ensure coupon exists or create one
       await supabase.from('coupons').upsert({
-        code: selected.value, type: 'percentage', value: 10,
+        code: selected.value, type: 'percentage', value: pctValue,
         min_order_value: 0, usage_limit: 1000, is_active: true
       }, { onConflict: 'code' })
     }

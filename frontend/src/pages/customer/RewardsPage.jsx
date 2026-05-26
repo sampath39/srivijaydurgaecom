@@ -119,14 +119,11 @@ function SpinWheel({ onSpin, hasSpun }) {
 
 export default function RewardsPage() {
   const profile  = useSelector(s => s.auth.profile)
-  const dispatch = useDispatch()
   const [balance, setBalance]   = useState(profile?.reward_points || 0)
   const [history, setHistory]   = useState([])
   const [loading, setLoading]   = useState(true)
-  const [checkedIn, setCheckedIn] = useState(false)
   const [hasSpun, setHasSpun]   = useState(false)
   const [spinResult, setSpinResult] = useState(null)
-  const [streak, setStreak]     = useState(0)
 
   useEffect(() => {
     api.get('/rewards/balance').then(({ data }) => {
@@ -134,27 +131,11 @@ export default function RewardsPage() {
       setHistory(data.history || [])
       setLoading(false)
     })
-    // Check today's checkin
-    const today = new Date().toISOString().split('T')[0]
-    supabase.from('daily_checkins').select('id,streak_days').eq('user_id', profile?.id).eq('checkin_date', today).single()
-      .then(({ data }) => { if (data) { setCheckedIn(true); setStreak(data.streak_days) } })
     // Check today's spin
+    const today = new Date().toISOString().split('T')[0]
     supabase.from('spin_wheel_history').select('id').eq('user_id', profile?.id).eq('spin_date', today).single()
       .then(({ data }) => { if (data) setHasSpun(true) })
   }, [])
-
-  const handleCheckin = async () => {
-    try {
-      const { data } = await api.post('/rewards/checkin')
-      setCheckedIn(true)
-      setStreak(data.streak)
-      setBalance(b => b + data.points_earned)
-      toast.success(data.message)
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Already checked in today')
-      setCheckedIn(true)
-    }
-  }
 
   const handleSpin = (reward) => {
     setHasSpun(true)
@@ -189,53 +170,30 @@ export default function RewardsPage() {
           <motion.p key={balance} initial={{ scale: 1.3 }} animate={{ scale: 1 }}
             className="font-display text-6xl font-bold my-2">{balance.toLocaleString('en-IN')}</motion.p>
           <p className="text-white/70 text-sm">points = ₹{(balance * 0.1).toFixed(2)} value</p>
-          {streak > 0 && (
-            <div className="mt-4 inline-flex items-center gap-2 bg-white/20 rounded-full px-4 py-1.5">
-              <Zap className="w-4 h-4" /> {streak}-day streak bonus active!
-            </div>
-          )}
         </div>
       </motion.div>
 
-      <div className="grid md:grid-cols-2 gap-8 mb-10">
-        {/* Daily check-in */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-          className="card p-6 text-center">
-          <Calendar className="w-12 h-12 text-secondary-500 mx-auto mb-3" />
-          <h2 className="font-bold text-xl text-gray-900 dark:text-white mb-1">Daily Check-In</h2>
-          {streak > 0 && <p className="text-primary-600 text-sm mb-3">🔥 {streak}-day streak!</p>}
-          <p className="text-gray-500 text-sm mb-5">Login every day to earn bonus points. Longer streak = more points!</p>
-          <div className="grid grid-cols-7 gap-1 mb-5">
-            {Array.from({length:7}).map((_,i) => (
-              <div key={i} className={`h-8 rounded-lg flex items-center justify-center text-xs font-bold ${i < streak % 7 ? 'bg-primary-500 text-white' : 'bg-gray-100 dark:bg-dark-700 text-gray-400'}`}>
-                {i < streak % 7 ? '✓' : i+1}
-              </div>
-            ))}
-          </div>
-          <button onClick={handleCheckin} disabled={checkedIn}
-            className="btn-primary w-full py-3 disabled:opacity-50 disabled:cursor-not-allowed justify-center">
-            {checkedIn ? <><CheckCircle className="w-4 h-4" /> Checked In Today!</> : <><Calendar className="w-4 h-4" /> Check In & Earn Points</>}
-          </button>
-        </motion.div>
-
-        {/* Spin wheel */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-          className="card p-6">
-          <h2 className="font-bold text-xl text-gray-900 dark:text-white mb-1 text-center">🎰 Spin & Win</h2>
-          <p className="text-gray-500 text-sm mb-4 text-center">Spin once daily to win points, coupons, or discounts!</p>
-          <SpinWheel onSpin={handleSpin} hasSpun={hasSpun} />
-          <AnimatePresence>
-            {spinResult && spinResult.type !== 'nothing' && (
-              <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}
-                className="mt-4 p-3 bg-primary-50 dark:bg-primary-900/20 rounded-xl text-center">
-                <p className="font-bold text-primary-700 dark:text-primary-400">
-                  🎉 {spinResult.type === 'points' ? `+${spinResult.value} Points!` : spinResult.type === 'coupon' ? `Coupon: ${spinResult.value}` : `₹${spinResult.value} Off!`}
-                </p>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </motion.div>
-      </div>
+      {/* Spin wheel */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }} 
+        animate={{ opacity: 1, y: 0 }} 
+        transition={{ delay: 0.1 }}
+        className="card p-8 mb-10 max-w-lg mx-auto"
+      >
+        <h2 className="font-bold text-2xl text-gray-900 dark:text-white mb-2 text-center">🎰 Spin & Win</h2>
+        <p className="text-gray-500 text-sm mb-6 text-center">Spin once daily to win points, coupons, or discounts!</p>
+        <SpinWheel onSpin={handleSpin} hasSpun={hasSpun} />
+        <AnimatePresence>
+          {spinResult && spinResult.type !== 'nothing' && (
+            <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}
+              className="mt-4 p-3 bg-primary-50 dark:bg-primary-900/20 rounded-xl text-center">
+              <p className="font-bold text-primary-700 dark:text-primary-400">
+                🎉 {spinResult.type === 'points' ? `+${spinResult.value} Points!` : spinResult.type === 'coupon' ? `Coupon: ${spinResult.value}` : `₹${spinResult.value} Off!`}
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
 
       {/* Points history */}
       <div className="card p-6">
@@ -266,10 +224,9 @@ export default function RewardsPage() {
       {/* How to earn */}
       <div className="mt-8 card p-6">
         <h2 className="font-bold text-xl text-gray-900 dark:text-white mb-5">How to Earn Points</h2>
-        <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
           {[
             { icon:'🛍️', title:'Every Purchase', desc:'₹100 = 10 points' },
-            { icon:'📅', title:'Daily Check-In', desc:'5-25 pts/day' },
             { icon:'🎰', title:'Spin Wheel', desc:'Up to 50 pts daily' },
             { icon:'👥', title:'Refer Friends', desc:'100 pts per referral' },
           ].map(card => (

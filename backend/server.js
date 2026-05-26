@@ -15,7 +15,12 @@ app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }))
 app.use(compression())
 app.use(morgan('dev'))
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: [
+    process.env.FRONTEND_URL || 'http://localhost:3000',
+    'http://localhost:5173',
+    'https://srivijaydurgaecom-frontend.vercel.app',
+    /\.vercel\.app$/,
+  ],
   credentials: true,
 }))
 

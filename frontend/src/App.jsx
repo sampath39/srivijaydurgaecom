@@ -21,31 +21,52 @@ import SignupPage        from './pages/auth/SignupPage'
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage'
 import ResetPasswordPage  from './pages/auth/ResetPasswordPage'
 
-// Customer pages (lazy-loaded for performance)
-const HomePage          = lazy(() => import('./pages/customer/HomePage'))
-const ProductsPage      = lazy(() => import('./pages/customer/ProductsPage'))
-const ProductDetailPage = lazy(() => import('./pages/customer/ProductDetailPage'))
-const CartPage          = lazy(() => import('./pages/customer/CartPage'))
-const CheckoutPage      = lazy(() => import('./pages/customer/CheckoutPage'))
-const PaymentSuccessPage= lazy(() => import('./pages/customer/PaymentSuccessPage'))
-const PaymentFailurePage= lazy(() => import('./pages/customer/PaymentFailurePage'))
-const OrdersPage        = lazy(() => import('./pages/customer/OrdersPage'))
-const OrderDetailPage   = lazy(() => import('./pages/customer/OrderDetailPage'))
-const WishlistPage      = lazy(() => import('./pages/customer/WishlistPage'))
-const ProfilePage       = lazy(() => import('./pages/customer/ProfilePage'))
-const RewardsPage       = lazy(() => import('./pages/customer/RewardsPage'))
-const ReferralPage      = lazy(() => import('./pages/customer/ReferralPage'))
-const SearchPage        = lazy(() => import('./pages/customer/SearchPage'))
+// Helper for lazy loading retry on chunk load failure
+function lazyRetry(componentImport) {
+  return lazy(async () => {
+    try {
+      return await componentImport()
+    } catch (error) {
+      console.error('Lazy import failed, reloading page...', error)
+      if (
+        error.message?.includes('Failed to fetch') ||
+        error.message?.includes('dynamically imported module') ||
+        error.message?.includes('Importing a module') ||
+        error.name === 'TypeError'
+      ) {
+        window.location.reload()
+        return new Promise(() => {}) // pending
+      }
+      throw error
+    }
+  })
+}
 
-// Admin pages (lazy-loaded)
-const AdminDashboard    = lazy(() => import('./pages/admin/DashboardPage'))
-const AdminProducts     = lazy(() => import('./pages/admin/ProductsPage'))
-const AddProductPage    = lazy(() => import('./pages/admin/AddProductPage'))
-const AdminOrders       = lazy(() => import('./pages/admin/OrdersPage'))
-const AdminUsers        = lazy(() => import('./pages/admin/UsersPage'))
-const AdminAnalytics    = lazy(() => import('./pages/admin/AnalyticsPage'))
-const AdminInventory    = lazy(() => import('./pages/admin/InventoryPage'))
-const AdminCoupons      = lazy(() => import('./pages/admin/CouponsPage'))
+// Customer pages (lazy-loaded with auto-retry on deploy updates)
+const HomePage          = lazyRetry(() => import('./pages/customer/HomePage'))
+const ProductsPage      = lazyRetry(() => import('./pages/customer/ProductsPage'))
+const ProductDetailPage = lazyRetry(() => import('./pages/customer/ProductDetailPage'))
+const CartPage          = lazyRetry(() => import('./pages/customer/CartPage'))
+const CheckoutPage      = lazyRetry(() => import('./pages/customer/CheckoutPage'))
+const PaymentSuccessPage= lazyRetry(() => import('./pages/customer/PaymentSuccessPage'))
+const PaymentFailurePage= lazyRetry(() => import('./pages/customer/PaymentFailurePage'))
+const OrdersPage        = lazyRetry(() => import('./pages/customer/OrdersPage'))
+const OrderDetailPage   = lazyRetry(() => import('./pages/customer/OrderDetailPage'))
+const WishlistPage      = lazyRetry(() => import('./pages/customer/WishlistPage'))
+const ProfilePage       = lazyRetry(() => import('./pages/customer/ProfilePage'))
+const RewardsPage       = lazyRetry(() => import('./pages/customer/RewardsPage'))
+const ReferralPage      = lazyRetry(() => import('./pages/customer/ReferralPage'))
+const SearchPage        = lazyRetry(() => import('./pages/customer/SearchPage'))
+
+// Admin pages (lazy-loaded with auto-retry)
+const AdminDashboard    = lazyRetry(() => import('./pages/admin/DashboardPage'))
+const AdminProducts     = lazyRetry(() => import('./pages/admin/ProductsPage'))
+const AddProductPage    = lazyRetry(() => import('./pages/admin/AddProductPage'))
+const AdminOrders       = lazyRetry(() => import('./pages/admin/OrdersPage'))
+const AdminUsers        = lazyRetry(() => import('./pages/admin/UsersPage'))
+const AdminAnalytics    = lazyRetry(() => import('./pages/admin/AnalyticsPage'))
+const AdminInventory    = lazyRetry(() => import('./pages/admin/InventoryPage'))
+const AdminCoupons      = lazyRetry(() => import('./pages/admin/CouponsPage'))
 
 function PageLoader() {
   return (

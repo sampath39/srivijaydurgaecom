@@ -8,14 +8,17 @@ import api from '../../lib/axios'
 import toast from 'react-hot-toast'
 
 // ── Validation helpers ────────────────────────────────────────
-const INDIAN_PHONE = /^[6-9]\d{9}$/
+const INDIAN_PHONE = /^(?:\+91|0)?[6-9]\d{9}$/
 const PINCODE_RE   = /^\d{6}$/
 
 function validateAddrForm(form) {
   const errs = {}
   if (!form.full_name.trim() || form.full_name.trim().length < 3)
     errs.full_name = 'Enter a valid full name (min 3 characters)'
-  if (!INDIAN_PHONE.test(form.phone.replace(/\s+/g, '')))
+  
+  // Clean phone number: remove all spaces, hyphens, and parentheses, keeping digits and plus
+  const cleanedPhone = form.phone.replace(/[\s\-\(\)]/g, '')
+  if (!INDIAN_PHONE.test(cleanedPhone))
     errs.phone = 'Enter a valid 10-digit Indian mobile number (starts with 6–9)'
   if (!form.address_line1.trim() || form.address_line1.trim().length < 5)
     errs.address_line1 = 'Enter a complete address (min 5 characters)'
@@ -327,10 +330,10 @@ export default function CheckoutPage() {
                       <label className="label">Mobile Number *</label>
                       <input
                         value={addrForm.phone}
-                        onChange={e => setField('phone', e.target.value.replace(/\D/g, '').slice(0, 10))}
-                        placeholder="10-digit mobile (e.g. 9876543210)"
-                        maxLength={10}
-                        inputMode="numeric"
+                        onChange={e => setField('phone', e.target.value.replace(/[^\d+\s\-()]/g, '').slice(0, 15))}
+                        placeholder="Mobile (e.g. +91 98765 43210)"
+                        maxLength={15}
+                        inputMode="tel"
                         className={`input text-sm ${addrErrors.phone ? 'border-red-400 focus:ring-red-400' : ''}`}
                       />
                       {addrErrors.phone && (

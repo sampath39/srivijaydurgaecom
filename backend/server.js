@@ -14,13 +14,26 @@ const app = express()
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }))
 app.use(compression())
 app.use(morgan('dev'))
+// CORS: allow Vercel frontend + localhost dev
+const allowedOrigins = [
+  'https://srivijaydurgaecom-frontend.vercel.app',
+  'http://localhost:3000',
+  'http://localhost:5173',
+]
 app.use(cors({
-  origin: [
-    process.env.FRONTEND_URL || 'http://localhost:3000',
-    'http://localhost:5173',
-    'https://srivijaydurgaecom-frontend.vercel.app',
-    /\.vercel\.app$/,
-  ],
+  origin: (origin, callback) => {
+    // Allow requests with no origin (e.g. curl, mobile apps, Razorpay webhooks)
+    if (!origin) return callback(null, true)
+    // Allow any vercel.app subdomain or any configured allowed origin
+    if (
+      allowedOrigins.includes(origin) ||
+      /\.vercel\.app$/.test(origin) ||
+      origin === process.env.FRONTEND_URL
+    ) {
+      return callback(null, true)
+    }
+    return callback(new Error(`CORS blocked: ${origin}`))
+  },
   credentials: true,
 }))
 

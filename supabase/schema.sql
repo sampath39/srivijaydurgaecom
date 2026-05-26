@@ -279,20 +279,20 @@ CREATE TABLE IF NOT EXISTS public.recently_viewed (
 -- ============================================================
 -- ROW LEVEL SECURITY
 -- ============================================================
-ALTER TABLE public.profiles          ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.addresses         ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.carts             ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.wishlists         ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.orders            ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.order_items       ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.reviews           ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.reward_points     ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.daily_checkins    ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.spin_wheel_history ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.notifications     ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.recently_viewed   ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.referrals         ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.redeemed_products ENABLE ROW LEVEL SECURITY;
+-- ALTER TABLE public.profiles          ENABLE ROW LEVEL SECURITY;
+-- ALTER TABLE public.addresses         ENABLE ROW LEVEL SECURITY;
+-- ALTER TABLE public.carts             ENABLE ROW LEVEL SECURITY;
+-- ALTER TABLE public.wishlists         ENABLE ROW LEVEL SECURITY;
+-- ALTER TABLE public.orders            ENABLE ROW LEVEL SECURITY;
+-- ALTER TABLE public.order_items       ENABLE ROW LEVEL SECURITY;
+-- ALTER TABLE public.reviews           ENABLE ROW LEVEL SECURITY;
+-- ALTER TABLE public.reward_points     ENABLE ROW LEVEL SECURITY;
+-- ALTER TABLE public.daily_checkins    ENABLE ROW LEVEL SECURITY;
+-- ALTER TABLE public.spin_wheel_history ENABLE ROW LEVEL SECURITY;
+-- ALTER TABLE public.notifications     ENABLE ROW LEVEL SECURITY;
+-- ALTER TABLE public.recently_viewed   ENABLE ROW LEVEL SECURITY;
+-- ALTER TABLE public.referrals         ENABLE ROW LEVEL SECURITY;
+-- ALTER TABLE public.redeemed_products ENABLE ROW LEVEL SECURITY;
 
 -- PROFILES policies
 CREATE POLICY "Users can view own profile" ON public.profiles FOR SELECT USING (auth.uid() = id);

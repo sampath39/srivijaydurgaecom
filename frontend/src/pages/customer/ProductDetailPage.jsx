@@ -23,7 +23,7 @@ export default function ProductDetailPage() {
   const [selectedSize, setSize]   = useState(null)
   const [related, setRelated]     = useState([])
   const [reviewText, setReview]   = useState('')
-  const [rating, setRating]       = useState(5)
+  const [rating, setRating]       = useState(0)
   const [submitting, setSubmit]   = useState(false)
 
   const isWished = useSelector(selectIsWishlisted(product?.id))
@@ -87,6 +87,7 @@ export default function ProductDetailPage() {
 
   const submitReview = async () => {
     if (!user) { toast.error('Login to submit a review'); return }
+    if (rating === 0) { toast.error('Please select a rating star first'); return }
     setSubmit(true)
     const { error } = await supabase.from('reviews')
       .upsert({ user_id: user.id, product_id: product.id, rating, body: reviewText }, { onConflict: 'product_id,user_id' })
@@ -94,7 +95,7 @@ export default function ProductDetailPage() {
     else {
       toast.success('Review submitted! Thank you 🙏')
       setReview('')
-      setRating(5)
+      setRating(0)
       // refresh reviews
       supabase.from('reviews').select('*, profiles(full_name,avatar_url)').eq('product_id', product.id)
         .then(({ data }) => setProduct(p => ({ ...p, reviews: data || [] })))

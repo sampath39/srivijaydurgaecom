@@ -4,8 +4,6 @@ import { Star, MapPin, Phone } from 'lucide-react'
 
 const LEFT_SAREE = { src: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=400&q=80', label: 'పట్టు చీర', sub: 'Silk Saree' }
 
-const RIGHT_SAREE = { src: 'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=400&q=80', label: 'డ్రెస్ మెటీరియల్', sub: 'Dress Material' }
-
 export default function ShopBanner() {
   return (
     <section className="shop-banner-section">
@@ -77,29 +75,6 @@ export default function ShopBanner() {
           </div>
         </motion.div>
 
-        {/* ── Right: 1 Saree Image ── */}
-        <motion.div
-          className="shop-banner-right"
-          initial={{ opacity: 0, x: 40 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.7, delay: 0.1 }}
-        >
-          <div className="saree-col-right">
-            <motion.div
-              className="saree-panel-right full-vertical"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              whileHover={{ scale: 1.03 }}
-            >
-              <img src={RIGHT_SAREE.src} alt={RIGHT_SAREE.sub} />
-              <div className="saree-panel-label">
-                <span className="saree-telugu">{RIGHT_SAREE.label}</span>
-                <span className="saree-english">{RIGHT_SAREE.sub}</span>
-              </div>
-            </motion.div>
-          </div>
-        </motion.div>
 
       </div>
 

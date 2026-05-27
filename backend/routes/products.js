@@ -4,7 +4,7 @@ const auth     = require('../middleware/auth')
 const adminOnly = require('../middleware/adminOnly')
 const supabase = require('../lib/supabase')
 
-// GET /api/products — list with filter, sort, pagination
+// GET /api/products — public list (active only)
 router.get('/', async (req, res) => {
   try {
     const { category, search, sort = 'created_at', order = 'desc',
@@ -39,6 +39,31 @@ router.get('/', async (req, res) => {
     if (error) throw error
 
     res.json({ success: true, data, count, page: +page, limit: +limit, total_pages: Math.ceil(count / limit) })
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message })
+  }
+})
+
+// GET /api/products/admin/all — admin: list ALL products (active + inactive)
+router.get('/admin/all', auth, adminOnly, async (req, res) => {
+  try {
+    const { search, page = 1, limit = 15 } = req.query
+
+    let query = supabase
+      .from('products')
+      .select('*, categories(name, slug)', { count: 'exact' })
+
+    if (search) query = query.ilike('name', `%${search}%`)
+
+    query = query.order('created_at', { ascending: false })
+
+    const from = (page - 1) * limit
+    query = query.range(from, from + limit - 1)
+
+    const { data, count, error } = await query
+    if (error) throw error
+
+    res.json({ success: true, data, count, page: +page, limit: +limit })
   } catch (err) {
     res.status(500).json({ success: false, message: err.message })
   }
@@ -92,11 +117,15 @@ router.put('/:id', auth, adminOnly, async (req, res) => {
   }
 })
 
-// DELETE /api/products/:id
+// DELETE /api/products/:id — permanently deletes from DB
 router.delete('/:id', auth, adminOnly, async (req, res) => {
   try {
-    await supabase.from('products').update({ is_active: false }).eq('id', req.params.id)
-    res.json({ success: true, message: 'Product deactivated' })
+    const { error } = await supabase
+      .from('products')
+      .delete()
+      .eq('id', req.params.id)
+    if (error) throw error
+    res.json({ success: true, message: 'Product permanently deleted' })
   } catch (err) {
     res.status(500).json({ success: false, message: err.message })
   }

@@ -96,7 +96,7 @@ export default function Footer() {
 
       <div className="border-t border-white/10 py-5">
         <div className="page-container flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-xs text-gray-500">© 2024 srivijaydurgakadhiemporeum. All rights reserved.</p>
+          <p className="text-xs text-gray-500">© 2026 Surepalli Eswar Rao. All rights reserved.</p>
           <div className="flex gap-4">
             <a href="#" className="text-xs text-gray-500 hover:text-primary-400">Privacy Policy</a>
             <a href="#" className="text-xs text-gray-500 hover:text-primary-400">Terms of Service</a>

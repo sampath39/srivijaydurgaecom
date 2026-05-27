@@ -10,36 +10,12 @@ export default function ShopBanner() {
 
       <div className="shop-banner-inner">
 
-        {/* ── Left: 1 Saree Image ── */}
+        {/* ── Left: Shop Info ── */}
         <motion.div
           className="shop-banner-left"
           initial={{ opacity: 0, x: -40 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.7 }}
-        >
-          <div className="saree-col">
-            <motion.div
-              className="saree-panel full-vertical"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              whileHover={{ scale: 1.03 }}
-            >
-              <img src={LEFT_SAREE.src} alt={LEFT_SAREE.sub} />
-              <div className="saree-panel-label">
-                <span className="saree-telugu">{LEFT_SAREE.label}</span>
-                <span className="saree-english">{LEFT_SAREE.sub}</span>
-              </div>
-            </motion.div>
-          </div>
-        </motion.div>
-
-        {/* ── Center: Shop Name ── */}
-        <motion.div
-          className="shop-banner-center"
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.1 }}
         >
           <div className="divine-badge">Est. 1999 · Guntur, Andhra Pradesh</div>
 
@@ -75,6 +51,29 @@ export default function ShopBanner() {
           </div>
         </motion.div>
 
+        {/* ── Right: Saree Image ── */}
+        <motion.div
+          className="shop-banner-right"
+          initial={{ opacity: 0, x: 40 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.7, delay: 0.1 }}
+        >
+          <div className="saree-col-right">
+            <motion.div
+              className="saree-panel-right full-vertical"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              whileHover={{ scale: 1.03 }}
+            >
+              <img src={LEFT_SAREE.src} alt={LEFT_SAREE.sub} />
+              <div className="saree-panel-label">
+                <span className="saree-telugu">{LEFT_SAREE.label}</span>
+                <span className="saree-english">{LEFT_SAREE.sub}</span>
+              </div>
+            </motion.div>
+          </div>
+        </motion.div>
 
       </div>
 

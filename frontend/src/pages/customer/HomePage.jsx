@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ArrowRight, Zap, Star, Gift, Users, ShoppingBag, Truck, Shield } from 'lucide-react'
+import { ArrowRight, Zap, Star, Gift, Users, ShoppingBag, Truck, Shield, MapPin, Phone } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import ProductCard from '../../components/ui/ProductCard'
 import FlashSaleTimer from '../../components/ui/FlashSaleTimer'
 import SkeletonCard from '../../components/ui/SkeletonCard'
-import ShopBanner from '../../components/ui/ShopBanner'
 import { useSelector } from 'react-redux'
 
 const HERO_SLIDES = [
@@ -93,11 +92,8 @@ export default function HomePage() {
   return (
     <div className="min-h-screen">
 
-      {/* ── Shop Identity Banner ─────────────────────── */}
-      <ShopBanner />
-
-      {/* ── Hero Banner ─────────────────────────────────── */}
-      <section className="relative h-[55vh] min-h-[400px] overflow-hidden">
+      {/* ── Hero Banner with Shop Details ─────────────────────── */}
+      <section className="relative h-[70vh] min-h-[500px] overflow-hidden">
         {HERO_SLIDES.map((s, i) => (
           <motion.div key={i}
             initial={false}
@@ -111,31 +107,75 @@ export default function HomePage() {
         ))}
 
         <div className="relative z-10 h-full flex items-center">
-          <div className="page-container">
-            <motion.div
-              key={currentSlide}
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="max-w-2xl"
-            >
-              <motion.span initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}
-                className="inline-block badge-gold mb-4 text-sm px-4 py-1.5">
-                {slide.badge}
-              </motion.span>
-              <h1 className="font-display text-5xl md:text-7xl font-bold text-white leading-tight whitespace-pre-line mb-4 text-shadow">
-                {slide.title}
-              </h1>
-              <p className="text-white/80 text-xl mb-8 max-w-lg">{slide.subtitle}</p>
-              <div className="flex flex-wrap gap-4">
-                <Link to={slide.link} className="btn-primary text-lg px-8 py-4 shadow-gold-lg">
-                  {slide.cta} <ArrowRight className="w-5 h-5" />
-                </Link>
-                <Link to="/products" className="flex items-center gap-2 px-8 py-4 bg-white/10 border border-white/30 text-white font-semibold rounded-xl hover:bg-white/20 transition-all backdrop-blur-sm">
-                  View All
-                </Link>
-              </div>
-            </motion.div>
+          <div className="page-container w-full">
+            <div className="grid lg:grid-cols-2 gap-8 items-center">
+              {/* Left: Shop Details */}
+              <motion.div
+                initial={{ opacity: 0, x: -40 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.7 }}
+                className="space-y-4"
+              >
+                <div className="divine-badge">Est. 1999 · Guntur, Andhra Pradesh</div>
+
+                <div className="shop-name-3d">
+                  <h1 className="shop-name-line1">Sri Vijaya Durga</h1>
+                  <h2 className="shop-name-line2">Kadhi Emporium</h2>
+                  <p className="shop-name-telugu">శ్రీ విజయ దుర్గా ఖాదీ ఎంపోరియం</p>
+                  <div className="shop-name-underline" />
+                </div>
+
+                <p className="shop-tagline">
+                  Authentic Handloom Sarees · కాది వస్త్రాలు
+                </p>
+
+                <div className="shop-rating">
+                  {[1,2,3,4,5].map(n => <Star key={n} className="star-icon" fill="currentColor" />)}
+                  <span>4.9 · 10,000+ Customers</span>
+                </div>
+
+                <div className="shop-info-pills">
+                  <a href="tel:9493447776" className="info-pill">
+                    <Phone className="w-3 h-3" /> 9493447776
+                  </a>
+                  <a href="https://maps.google.com/?q=Arundelpet,Guntur" target="_blank" rel="noreferrer" className="info-pill">
+                    <MapPin className="w-3 h-3" /> Arundelpet, Guntur
+                  </a>
+                  <span className="info-pill highlight">25+ Years of Trust</span>
+                </div>
+
+                <div className="shop-cta-row">
+                  <Link to="/products" className="shop-cta-primary">🛍️ Shop Now</Link>
+                  <Link to="/products?category=sarees" className="shop-cta-secondary">🥻 View Sarees</Link>
+                </div>
+              </motion.div>
+
+              {/* Right: Slide Content */}
+              <motion.div
+                key={currentSlide}
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                className="max-w-xl"
+              >
+                <motion.span initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}
+                  className="inline-block badge-gold mb-4 text-sm px-4 py-1.5">
+                  {slide.badge}
+                </motion.span>
+                <h1 className="font-display text-4xl md:text-5xl font-bold text-white leading-tight whitespace-pre-line mb-4 text-shadow">
+                  {slide.title}
+                </h1>
+                <p className="text-white/80 text-lg mb-6 max-w-lg">{slide.subtitle}</p>
+                <div className="flex flex-wrap gap-4">
+                  <Link to={slide.link} className="btn-primary text-lg px-8 py-4 shadow-gold-lg">
+                    {slide.cta} <ArrowRight className="w-5 h-5" />
+                  </Link>
+                  <Link to="/products" className="flex items-center gap-2 px-8 py-4 bg-white/10 border border-white/30 text-white font-semibold rounded-xl hover:bg-white/20 transition-all backdrop-blur-sm">
+                    View All
+                  </Link>
+                </div>
+              </motion.div>
+            </div>
           </div>
         </div>
 

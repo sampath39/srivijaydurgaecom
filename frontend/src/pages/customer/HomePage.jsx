@@ -159,22 +159,18 @@ export default function HomePage() {
                 className="max-w-xl"
               >
                 <motion.span initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}
-                  className="inline-block mb-4 text-sm px-4 py-1.5 rounded-full"
-                  style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.2), rgba(245,158,11,0.08))', border: '1px solid rgba(245,158,11,0.5)', color: '#fbbf24' }}>
+                  className="inline-block badge-gold mb-4 text-sm px-4 py-1.5">
                   {slide.badge}
                 </motion.span>
-                <h1 className="font-display text-4xl md:text-5xl font-bold leading-tight whitespace-pre-line mb-4"
-                  style={{ color: '#fbbf24', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}>
+                <h1 className="font-display text-4xl md:text-5xl font-bold text-white leading-tight whitespace-pre-line mb-4 text-shadow">
                   {slide.title}
                 </h1>
-                <p className="text-lg mb-6 max-w-lg" style={{ color: 'rgba(251,191,36,0.8)' }}>{slide.subtitle}</p>
+                <p className="text-white/80 text-lg mb-6 max-w-lg">{slide.subtitle}</p>
                 <div className="flex flex-wrap gap-4">
-                  <Link to={slide.link} className="text-lg px-8 py-4 rounded-xl font-semibold transition-all"
-                    style={{ background: 'linear-gradient(135deg, #fbbf24, #f59e0b)', color: '#000', boxShadow: '0 4px 15px rgba(245,158,11,0.4)' }}>
+                  <Link to={slide.link} className="btn-primary text-lg px-8 py-4 shadow-gold-lg">
                     {slide.cta} <ArrowRight className="w-5 h-5" />
                   </Link>
-                  <Link to="/products" className="flex items-center gap-2 px-8 py-4 border font-semibold rounded-xl transition-all"
-                    style={{ borderColor: 'rgba(251,191,36,0.5)', color: '#fbbf24', background: 'rgba(251,191,36,0.1)' }}>
+                  <Link to="/products" className="flex items-center gap-2 px-8 py-4 bg-white/10 border border-white/30 text-white font-semibold rounded-xl hover:bg-white/20 transition-all backdrop-blur-sm">
                     View All
                   </Link>
                 </div>

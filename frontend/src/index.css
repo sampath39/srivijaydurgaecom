@@ -370,9 +370,9 @@
 
 .divine-badge {
   display: inline-block;
-  background: linear-gradient(135deg, rgba(255,255,255,0.15), rgba(255,255,255,0.05));
-  border: 1px solid rgba(255,255,255,0.3);
-  color: #ffffff;
+  background: linear-gradient(135deg, rgba(245,158,11,0.2), rgba(245,158,11,0.08));
+  border: 1px solid rgba(245,158,11,0.5);
+  color: #fbbf24;
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.08em;
@@ -393,18 +393,26 @@
   font-size: clamp(1.7rem, 3.5vw, 3rem);
   font-weight: 800;
   line-height: 1.1;
-  color: #ffffff;
-  filter: drop-shadow(0 3px 6px rgba(0,0,0,0.3));
+  background: linear-gradient(180deg,
+    #fef3c7 0%,
+    #fbbf24 30%,
+    #f59e0b 60%,
+    #d97706 80%,
+    #92400e 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 3px 6px rgba(245,158,11,0.35));
 }
 
 .shop-name-line2 {
   font-family: 'Playfair Display', serif;
   font-size: clamp(1rem, 2.2vw, 1.75rem);
   font-weight: 600;
-  color: #ffffff;
+  color: #fcd34d;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  filter: drop-shadow(0 2px 5px rgba(0,0,0,0.3));
+  filter: drop-shadow(0 2px 5px rgba(245,158,11,0.4));
 }
 
 .shop-name-telugu {
@@ -444,7 +452,7 @@
   color: #fbbf24;
 }
 .shop-rating span {
-  color: rgba(255,255,255,0.9);
+  color: rgba(255,255,255,0.7);
   font-size: 11px;
   margin-left: 4px;
 }

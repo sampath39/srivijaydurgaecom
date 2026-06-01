@@ -235,22 +235,20 @@ export default function CheckoutPage() {
       const ok = await loadRazorpay()
       if (!ok) { toast.error('Failed to load Razorpay.'); setPayLoading(false); return }
       const cartPayload = items.map(i => ({ product_id: i.product.id, quantity: i.quantity, size: i.size }))
-      const { data: orderData } = await api.post('/payments/create-order', {
-        cart_items: cartPayload, address_id: selectedAddr.id,
-        coupon_code: couponData?.coupon?.code || '', points_to_use: pointsToUse,
-      })
+      
+      const checkoutArgs = {
+        cart_items: cartPayload,
+        address_id: selectedAddr.id,
+        coupon_code: couponData?.coupon?.code || '',
+        points_to_use: pointsToUse,
+      }
+
+      const { data: orderData } = await api.post('/payments/create-order', checkoutArgs)
 
       const handleFailure = async (errDescription) => {
         setPayLoading(false)
-        try {
-          await api.post('/payments/fail', { order_id: orderData.order_id })
-        } catch (failErr) {
-          console.error('Failed to mark order as failed:', failErr)
-        }
         navigate('/orders/failure', {
           state: {
-            order_id:     orderData.order_id,
-            order_number: orderData.order_number,
             total_amount: orderData.total_amount,
             address:      selectedAddr,
             items:        items.map(i => ({
@@ -258,7 +256,9 @@ export default function CheckoutPage() {
               quantity: i.quantity,
               size:     i.size
             })),
-            error:        errDescription || 'Payment was not completed'
+            error:        errDescription || 'Payment was not completed',
+            coupon_code:  checkoutArgs.coupon_code,
+            points_to_use: checkoutArgs.points_to_use
           }
         })
       }
@@ -277,7 +277,7 @@ export default function CheckoutPage() {
                 razorpay_order_id:   orderData.razorpay_order_id,
                 razorpay_payment_id: `mock_pay_${Date.now()}`,
                 razorpay_signature:  `mock_sig_${Date.now()}`,
-                order_id:            orderData.order_id,
+                ...checkoutArgs
               })
               dispatch(clearCart())
               navigate('/orders/success', { state: { order_number: v.order_number, order_id: v.order_id, total_amount: orderData.total_amount, points_earned: v.points_earned } })
@@ -303,7 +303,7 @@ export default function CheckoutPage() {
               razorpay_order_id:   response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature:  response.razorpay_signature,
-              order_id:            orderData.order_id,
+              ...checkoutArgs
             })
             dispatch(clearCart())
             navigate('/orders/success', { state: { order_number: v.order_number, order_id: v.order_id, total_amount: orderData.total_amount, points_earned: v.points_earned } })

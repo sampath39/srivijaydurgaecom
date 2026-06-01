@@ -132,13 +132,17 @@ router.put('/:id/status', auth, async (req, res) => {
       refunded:   'Your refund has been processed.',
     }
     if (statusMessages[status]) {
-      await supabase.from('notifications').insert({
-        user_id: data.user_id,
-        title:   `Order ${data.order_number} — ${status.charAt(0).toUpperCase() + status.slice(1)}`,
-        message: statusMessages[status],
-        type:    'order',
-        link:    `/orders/${data.id}`,
-      }).catch(() => null)
+      try {
+        await supabase.from('notifications').insert({
+          user_id: data.user_id,
+          title:   `Order ${data.order_number} — ${status.charAt(0).toUpperCase() + status.slice(1)}`,
+          message: statusMessages[status],
+          type:    'order',
+          link:    `/orders/${data.id}`,
+        })
+      } catch (e) {
+        console.warn('[orders/status] Failed to insert notification:', e.message)
+      }
     }
 
     res.json({ success: true, data, message: `Order updated to "${status}"` })

@@ -49,10 +49,14 @@ router.post('/spin', auth, async (req, res) => {
       await supabase.from('reward_points').insert({
         user_id: req.user.id, points: pts, type: 'spin', description: `Spin wheel reward`
       })
-      await supabase.rpc('increment_points', {
-        p_user_id: req.user.id,
-        p_points:  pts
-      }).catch(() => null)
+      try {
+        await supabase.rpc('increment_points', {
+          p_user_id: req.user.id,
+          p_points:  pts
+        })
+      } catch (e) {
+        console.warn('[rewards/spin] Failed to increment points:', e.message)
+      }
     }
 
     if (selected.type === 'coupon') {

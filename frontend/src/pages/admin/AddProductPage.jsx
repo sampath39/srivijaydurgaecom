@@ -28,7 +28,7 @@ export default function AddProductPage() {
   useEffect(() => {
     api.get('/categories').then(({ data }) => setCategories(data.data || []))
     if (isEdit) {
-      api.get(`/products/${id}`).then(({ data }) => {
+      api.get(`/products/admin/detail/${id}`).then(({ data }) => {
         const p = data.data
         setForm({ name:p.name||'', brand:p.brand||'', category_id:p.category_id||'', description:p.description||'', short_desc:p.short_desc||'', price:p.price||'', discount_price:p.discount_price||'', stock_count:p.stock_count||'', sku:p.sku||'', fabric:p.fabric||'', color:p.color||'', points_reward:p.points_reward||'10', is_featured:p.is_featured||false, is_flash_sale:p.is_flash_sale||false, is_active:p.is_active!==false, size_options:p.size_options||[], images:p.images||[] })
         setImageUrls(p.images||[])

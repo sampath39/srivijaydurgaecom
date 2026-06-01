@@ -69,6 +69,21 @@ router.get('/admin/all', auth, adminOnly, async (req, res) => {
   }
 })
 
+// GET /api/products/admin/detail/:id — admin only
+router.get('/admin/detail/:id', auth, adminOnly, async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('products')
+      .select('*, categories(name, slug)')
+      .eq('id', req.params.id)
+      .single()
+    if (error || !data) return res.status(404).json({ success: false, message: 'Product not found' })
+    res.json({ success: true, data })
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message })
+  }
+})
+
 // GET /api/products/:slug
 router.get('/:slug', async (req, res) => {
   try {

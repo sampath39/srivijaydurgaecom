@@ -72,6 +72,8 @@ app.get('/health', (_req, res) => res.json({
   status: 'OK',
   app: process.env.APP_NAME,
   time: new Date().toISOString(),
+  deployed_at: '2026-06-01T12:08:00Z',
+  version: 'v_simulation_fallback_fixed'
 }))
 
 // ── Error handler ─────────────────────────────────────────────

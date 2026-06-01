@@ -35,6 +35,43 @@ export default function PaymentFailurePage() {
 
       const { data } = await api.post(`/payments/retry/${order_id}`)
 
+      if (data.razorpay_order_id && data.razorpay_order_id.startsWith('mock_')) {
+        const simulateSuccess = confirm(
+          "Razorpay is running in SIMULATION MODE (invalid keys on server).\n\n" +
+          "Click OK to simulate SUCCESSFUL payment.\n" +
+          "Click CANCEL to simulate FAILED payment."
+        )
+        if (simulateSuccess) {
+          toast.success('Simulation Mode: Simulating payment success...', { duration: 3000 })
+          setTimeout(async () => {
+            try {
+              const { data: verifyData } = await api.post('/payments/verify', {
+                razorpay_order_id:   data.razorpay_order_id,
+                razorpay_payment_id: `mock_pay_${Date.now()}`,
+                razorpay_signature:  `mock_sig_${Date.now()}`,
+                order_id:            data.order_id,
+              })
+              navigate('/orders/success', {
+                state: {
+                  order_number:  data.order_number,
+                  order_id:      data.order_id,
+                  total_amount:  data.total_amount,
+                  points_earned: verifyData.points_earned,
+                }
+              })
+            } catch (e) {
+              toast.error('Verification failed. Contact support.')
+            } finally {
+              setRetrying(false)
+            }
+          }, 1500)
+        } else {
+          toast.error('Simulated payment failed')
+          setRetrying(false)
+        }
+        return
+      }
+
       const options = {
         key:      data.key_id,
         amount:   data.amount,

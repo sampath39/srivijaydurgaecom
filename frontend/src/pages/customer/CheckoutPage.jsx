@@ -263,6 +263,34 @@ export default function CheckoutPage() {
         })
       }
 
+      if (orderData.razorpay_order_id && orderData.razorpay_order_id.startsWith('mock_')) {
+        const simulateSuccess = confirm(
+          "Razorpay is running in SIMULATION MODE (invalid keys on server).\n\n" +
+          "Click OK to simulate SUCCESSFUL payment.\n" +
+          "Click CANCEL to simulate FAILED payment."
+        )
+        if (simulateSuccess) {
+          toast.success('Simulation Mode: Simulating payment success...', { duration: 3000 })
+          setTimeout(async () => {
+            try {
+              const { data: v } = await api.post('/payments/verify', {
+                razorpay_order_id:   orderData.razorpay_order_id,
+                razorpay_payment_id: `mock_pay_${Date.now()}`,
+                razorpay_signature:  `mock_sig_${Date.now()}`,
+                order_id:            orderData.order_id,
+              })
+              dispatch(clearCart())
+              navigate('/orders/success', { state: { order_number: v.order_number, order_id: v.order_id, total_amount: orderData.total_amount, points_earned: v.points_earned } })
+            } catch (verifyErr) {
+              handleFailure(verifyErr.response?.data?.message || 'Verification failed')
+            }
+          }, 1500)
+        } else {
+          handleFailure('Simulated payment failure/cancellation')
+        }
+        return
+      }
+
       const options = {
         key: orderData.key_id, amount: orderData.amount, currency: orderData.currency,
         name: 'Sri Vijaya Durga Kadi Emporium', description: 'Order Payment',

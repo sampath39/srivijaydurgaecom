@@ -107,11 +107,16 @@ router.put('/:id/status', auth, async (req, res) => {
       return res.status(400).json({ success: false, message: `Invalid status. Must be one of: ${VALID.join(', ')}` })
     }
 
+    const updateFields = { status, updated_at: new Date().toISOString() }
+    if (status === 'delivered') {
+      updateFields.payment_status = 'paid'
+    }
+
     const { data, error } = await supabase
       .from('orders')
-      .update({ status, updated_at: new Date().toISOString() })
+      .update(updateFields)
       .eq('id', req.params.id)
-      .select('id, order_number, status, user_id, total_amount')
+      .select('id, order_number, status, user_id, total_amount, payment_status')
       .single()
 
     if (error) throw error

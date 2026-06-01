@@ -239,33 +239,59 @@ export default function CheckoutPage() {
         cart_items: cartPayload, address_id: selectedAddr.id,
         coupon_code: couponData?.coupon?.code || '', points_to_use: pointsToUse,
       })
+
+      const handleFailure = async (errDescription) => {
+        setPayLoading(false)
+        try {
+          await api.post('/payments/fail', { order_id: orderData.order_id })
+        } catch (failErr) {
+          console.error('Failed to mark order as failed:', failErr)
+        }
+        navigate('/orders/failure', {
+          state: {
+            order_id:     orderData.order_id,
+            order_number: orderData.order_number,
+            total_amount: orderData.total_amount,
+            address:      selectedAddr,
+            items:        items.map(i => ({
+              product:  i.product,
+              quantity: i.quantity,
+              size:     i.size
+            })),
+            error:        errDescription || 'Payment was not completed'
+          }
+        })
+      }
+
       const options = {
         key: orderData.key_id, amount: orderData.amount, currency: orderData.currency,
         name: 'Sri Vijaya Durga Kadi Emporium', description: 'Order Payment',
         order_id: orderData.razorpay_order_id, prefill: orderData.prefill,
         theme: { color: '#F59E0B' },
-        modal: { ondismiss: () => { setPayLoading(false); toast('Payment cancelled') } },
+        modal: { ondismiss: () => { handleFailure('Payment cancelled by user') } },
         handler: async (response) => {
           try {
             const { data: v } = await api.post('/payments/verify', {
               razorpay_order_id:   response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature:  response.razorpay_signature,
-              cart_items: cartPayload, address_id: selectedAddr.id,
-              coupon_code: couponData?.coupon?.code || '', points_to_use: pointsToUse,
+              order_id:            orderData.order_id,
             })
             dispatch(clearCart())
             navigate('/orders/success', { state: { order_number: v.order_number, order_id: v.order_id, total_amount: orderData.total_amount, points_earned: v.points_earned } })
           } catch (verifyErr) {
             console.error('Verify error:', verifyErr.response?.data || verifyErr.message)
             const msg = verifyErr.response?.data?.message || verifyErr.message || 'Verification failed'
-            toast.error(`Order error: ${msg}`, { duration: 8000 })
+            toast.error(`Order verification failed: ${msg}`, { duration: 8000 })
+            handleFailure(msg)
           }
           setPayLoading(false)
         },
       }
       const rzp = new window.Razorpay(options)
-      rzp.on('payment.failed', (r) => { toast.error(`Payment failed: ${r.error.description}`); setPayLoading(false) })
+      rzp.on('payment.failed', (r) => {
+        handleFailure(r.error.description || 'Payment failed')
+      })
       rzp.open()
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to initiate payment.')

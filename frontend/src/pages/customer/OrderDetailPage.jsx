@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Package, MapPin, CreditCard, ArrowLeft, Clock, CheckCircle, Truck, XCircle } from 'lucide-react'
 import api from '../../lib/axios'
+import toast from 'react-hot-toast'
 
 const STATUS_STEPS = [
   { key:'pending',    icon:'🕐', label:'Order Placed' },
@@ -14,9 +15,11 @@ const STATUS_STEPS = [
 
 export default function OrderDetailPage() {
   const { id } = useParams()
+  const navigate = useNavigate()
   const [order, setOrder]     = useState(null)
   const [loading, setLoading] = useState(true)
   const [cancelling, setCancel] = useState(false)
+  const [payLoading, setPayLoading] = useState(false)
 
   useEffect(() => {
     api.get(`/orders/${id}`).then(({ data }) => { setOrder(data.data); setLoading(false) })
@@ -28,6 +31,77 @@ export default function OrderDetailPage() {
     await api.post(`/orders/${id}/cancel`)
     setOrder(o => ({...o, status: 'cancelled'}))
     setCancel(false)
+  }
+
+  const loadRazorpay = () => new Promise(resolve => {
+    if (window.Razorpay) { resolve(true); return }
+    const s = document.createElement('script')
+    s.src = 'https://checkout.razorpay.com/v1/checkout.js'
+    s.onload = () => resolve(true)
+    s.onerror = () => resolve(false)
+    document.body.appendChild(s)
+  })
+
+  const handleRetryPayment = async () => {
+    setPayLoading(true)
+    try {
+      const ok = await loadRazorpay()
+      if (!ok) { toast.error('Failed to load Razorpay.'); setPayLoading(false); return }
+
+      const { data } = await api.post(`/payments/retry/${order.id}`)
+
+      const options = {
+        key:      data.key_id,
+        amount:   data.amount,
+        currency: data.currency,
+        name:     'Sri Vijaya Durga Kadi Emporium',
+        description: `Retry Order ${data.order_number}`,
+        order_id: data.razorpay_order_id,
+        prefill:  data.prefill,
+        theme:    { color: '#F59E0B' },
+        modal:    { ondismiss: () => { setPayLoading(false); toast('Payment cancelled') } },
+        handler: async (response) => {
+          try {
+            const { data: verifyData } = await api.post('/payments/verify', {
+              razorpay_order_id:   response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature:  response.razorpay_signature,
+              order_id:            data.order_id,
+            })
+            toast.success('Payment successful!')
+            setOrder(prev => ({
+              ...prev,
+              status: 'confirmed',
+              payment_status: 'paid'
+            }))
+            navigate('/orders/success', {
+              state: {
+                order_number:  data.order_number,
+                order_id:      data.order_id,
+                total_amount:  data.total_amount,
+                points_earned: verifyData.points_earned,
+              }
+            })
+          } catch (verifyErr) {
+            console.error('Verify error:', verifyErr.response?.data || verifyErr.message)
+            toast.error('Payment verification failed.')
+          } finally {
+            setPayLoading(false)
+          }
+        }
+      }
+
+      const rzp = new window.Razorpay(options)
+      rzp.on('payment.failed', (r) => {
+        toast.error(`Payment failed: ${r.error.description}`)
+        setPayLoading(false)
+      })
+      rzp.open()
+    } catch (err) {
+      console.error('Retry payment failed:', err)
+      toast.error(err.response?.data?.message || 'Failed to initiate retry payment')
+      setPayLoading(false)
+    }
   }
 
   if (loading) return <div className="page-container py-10"><div className="skeleton h-96 rounded-2xl" /></div>
@@ -127,6 +201,20 @@ export default function OrderDetailPage() {
                   {order.payment_status}
                 </span>
               </div>
+              {order.payment_method === 'razorpay' && order.payment_status !== 'paid' && !['cancelled', 'refunded'].includes(order.status) && (
+                <button
+                  onClick={handleRetryPayment}
+                  disabled={payLoading}
+                  className="w-full mt-4 btn-primary py-2.5 text-sm justify-center flex items-center gap-2"
+                >
+                  {payLoading ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <CreditCard className="w-4 h-4" />
+                  )}
+                  Pay Now (Retry)
+                </button>
+              )}
             </div>
           </div>
 

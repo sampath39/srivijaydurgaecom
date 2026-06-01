@@ -57,6 +57,22 @@ router.post('/:id/cancel', auth, async (req, res) => {
       .update({ status: 'cancelled', updated_at: new Date().toISOString() })
       .eq('id', req.params.id)
 
+    // Restore stock
+    try {
+      const { data: items } = await supabase
+        .from('order_items')
+        .select('product_id, quantity')
+        .eq('order_id', req.params.id)
+
+      if (items) {
+        for (const item of items) {
+          await supabase.rpc('increment_stock', { p_product_id: item.product_id, p_quantity: item.quantity })
+        }
+      }
+    } catch (stockErr) {
+      console.error('[cancel] Failed to restore stock:', stockErr.message)
+    }
+
     res.json({ success: true, message: 'Order cancelled successfully' })
   } catch (err) {
     res.status(500).json({ success: false, message: err.message })
@@ -116,6 +132,13 @@ router.put('/:id/status', auth, async (req, res) => {
       updateFields.payment_status = 'paid'
     }
 
+    // Fetch previous status for stock restoration check
+    const { data: oldOrder } = await supabase
+      .from('orders')
+      .select('status')
+      .eq('id', req.params.id)
+      .single()
+
     const { data, error } = await supabase
       .from('orders')
       .update(updateFields)
@@ -125,6 +148,24 @@ router.put('/:id/status', auth, async (req, res) => {
 
     if (error) throw error
     if (!data) return res.status(404).json({ success: false, message: 'Order not found' })
+
+    // Restore stock if changing to cancelled/refunded and it wasn't cancelled/refunded before
+    if (['cancelled', 'refunded'].includes(status) && oldOrder && !['cancelled', 'refunded'].includes(oldOrder.status)) {
+      try {
+        const { data: items } = await supabase
+          .from('order_items')
+          .select('product_id, quantity')
+          .eq('order_id', req.params.id)
+
+        if (items) {
+          for (const item of items) {
+            await supabase.rpc('increment_stock', { p_product_id: item.product_id, p_quantity: item.quantity })
+          }
+        }
+      } catch (stockErr) {
+        console.error('[orders/status] Failed to restore stock on cancel:', stockErr.message)
+      }
+    }
 
     // Notify the customer about status change
     const statusMessages = {

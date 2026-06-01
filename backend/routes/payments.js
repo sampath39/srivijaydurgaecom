@@ -160,6 +160,23 @@ router.post('/create-order', auth, async (req, res) => {
 
     const amountInPaise = Math.round(details.totalAmount * 100)
 
+    // Duplicate prevention: check for an order with the same amount in the last 10 seconds
+    const tenSecondsAgo = new Date(Date.now() - 10000).toISOString()
+    const { data: recentOrders } = await supabase
+      .from('orders')
+      .select('id, total_amount')
+      .eq('user_id', req.user.id)
+      .gte('created_at', tenSecondsAgo)
+
+    const duplicate = recentOrders?.find(o => Math.abs(o.total_amount - details.totalAmount) < 0.01)
+    if (duplicate) {
+      console.warn(`[duplicate prevention] Blocked duplicate online order request for user ${req.user.id}`)
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Duplicate order request detected. Please wait a moment.' 
+      })
+    }
+
     // Create Razorpay order
     let rzpOrder
     try {
@@ -571,6 +588,23 @@ router.post('/cod', auth, async (req, res) => {
       points_to_use,
       payment_method: 'cod',
     })
+
+    // Duplicate prevention: check for an order with the same amount in the last 10 seconds
+    const tenSecondsAgo = new Date(Date.now() - 10000).toISOString()
+    const { data: recentOrders } = await supabase
+      .from('orders')
+      .select('id, total_amount')
+      .eq('user_id', req.user.id)
+      .gte('created_at', tenSecondsAgo)
+
+    const duplicate = recentOrders?.find(o => Math.abs(o.total_amount - details.totalAmount) < 0.01)
+    if (duplicate) {
+      console.warn(`[duplicate prevention] Blocked duplicate COD order request for user ${req.user.id}`)
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Duplicate order request detected. Please wait a moment.' 
+      })
+    }
 
     // Create order in DB with COD payment method
     const { data: order, error: orderErr } = await supabase

@@ -389,6 +389,16 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- Increment product stock count
+CREATE OR REPLACE FUNCTION public.increment_stock(p_product_id uuid, p_quantity integer)
+RETURNS void AS $$
+BEGIN
+  UPDATE public.products
+  SET stock_count = stock_count + p_quantity
+  WHERE id = p_product_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- Increment user reward points
 CREATE OR REPLACE FUNCTION public.increment_points(p_user_id uuid, p_points integer)
 RETURNS void AS $$

@@ -379,7 +379,38 @@ CREATE OR REPLACE TRIGGER after_review_change
   AFTER INSERT OR UPDATE ON public.reviews
   FOR EACH ROW EXECUTE FUNCTION update_product_rating();
 
+-- Decrement product stock count
+CREATE OR REPLACE FUNCTION public.decrement_stock(p_product_id uuid, p_quantity integer)
+RETURNS void AS $$
+BEGIN
+  UPDATE public.products
+  SET stock_count = GREATEST(0, stock_count - p_quantity)
+  WHERE id = p_product_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Increment user reward points
+CREATE OR REPLACE FUNCTION public.increment_points(p_user_id uuid, p_points integer)
+RETURNS void AS $$
+BEGIN
+  UPDATE public.profiles
+  SET reward_points = GREATEST(0, reward_points + p_points)
+  WHERE id = p_user_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Increment coupon usage count
+CREATE OR REPLACE FUNCTION public.increment_coupon_usage(p_coupon_id uuid)
+RETURNS void AS $$
+BEGIN
+  UPDATE public.coupons
+  SET used_count = used_count + 1
+  WHERE id = p_coupon_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- ============================================================
+
 -- SEED DATA — Categories
 -- ============================================================
 INSERT INTO public.categories (name, slug, description, icon, sort_order) VALUES

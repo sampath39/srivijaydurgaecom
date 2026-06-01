@@ -535,7 +535,7 @@ router.post('/retry/:order_id', auth, async (req, res) => {
 })
 
 // ── POST /api/payments/fail ──────────────────────────────────
-// Marks order payment status as failed
+// Deletes order from DB when payment fails/is cancelled
 router.post('/fail', auth, async (req, res) => {
   try {
     const { order_id } = req.body
@@ -545,16 +545,13 @@ router.post('/fail', auth, async (req, res) => {
 
     const { error } = await supabase
       .from('orders')
-      .update({
-        payment_status: 'failed',
-        updated_at: new Date().toISOString()
-      })
+      .delete()
       .eq('id', order_id)
       .eq('user_id', req.user.id)
 
     if (error) throw error
 
-    return res.json({ success: true, message: 'Order marked as failed' })
+    return res.json({ success: true, message: 'Failed order deleted from database' })
   } catch (err) {
     console.error('fail payment error:', err)
     res.status(500).json({ success: false, message: err.message })

@@ -10,6 +10,8 @@ router.get('/', auth, async (req, res) => {
       .from('orders')
       .select('*, order_items(*, products(name, images))')
       .eq('user_id', req.user.id)
+      .neq('status', 'pending')
+      .neq('payment_status', 'failed')
       .order('created_at', { ascending: false })
     if (error) throw error
     res.json({ success: true, data })
@@ -96,6 +98,8 @@ router.get('/admin/all', auth, async (req, res) => {
     let query = supabase
       .from('orders')
       .select('id, order_number, status, payment_status, payment_method, total_amount, subtotal, discount_amount, shipping_charge, created_at, updated_at, profiles(full_name, email, phone), order_items(id)', { count: 'exact' })
+      .neq('status', 'pending')
+      .neq('payment_status', 'failed')
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1)
 

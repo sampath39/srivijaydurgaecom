@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus, Search, Edit, Trash2, Eye, ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react'
+import { Plus, Search, Edit, Trash2, Eye, ChevronLeft, ChevronRight, AlertTriangle, RefreshCcw } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import api from '../../lib/axios'
 import toast from 'react-hot-toast'
@@ -14,6 +14,7 @@ export default function AdminProductsPage() {
   const [confirmId, setConfirmId]     = useState(null)   // product id pending delete
   const [confirmName, setConfirmName] = useState('')
   const [deleting, setDeleting]       = useState(false)
+  const [seeding, setSeeding]         = useState(false)
   const LIMIT = 15
 
   const load = async (p = 1, q = '') => {
@@ -24,6 +25,22 @@ export default function AdminProductsPage() {
       setTotal(data.count || 0)
     } catch { toast.error('Failed to load products') }
     setLoading(false)
+  }
+
+  const handleSeedDefaults = async () => {
+    setSeeding(true)
+    const tId = toast.loading('Seeding default products...')
+    try {
+      await api.post('/products/admin/seed-defaults')
+      toast.success('Successfully loaded default products!', { id: tId })
+      setPage(1)
+      load(1, search)
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Failed to load default products'
+      toast.error(msg, { id: tId })
+    } finally {
+      setSeeding(false)
+    }
   }
 
   useEffect(() => { load(page, search) }, [page])
@@ -107,9 +124,23 @@ export default function AdminProductsPage() {
           <h1 className="font-display text-2xl font-bold text-gray-900 dark:text-white">Products</h1>
           <p className="text-gray-400 text-sm">{total} total products (all statuses)</p>
         </div>
-        <Link to="/admin/products/new" className="btn-primary py-2.5 px-5">
-          <Plus className="w-4 h-4" /> Add Product
-        </Link>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleSeedDefaults}
+            disabled={seeding || loading}
+            className="btn-outline py-2.5 px-4 text-sm flex items-center gap-2"
+          >
+            {seeding ? (
+              <div className="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <RefreshCcw className="w-4 h-4 text-primary-500" />
+            )}
+            Load Defaults
+          </button>
+          <Link to="/admin/products/new" className="btn-primary py-2.5 px-5">
+            <Plus className="w-4 h-4" /> Add Product
+          </Link>
+        </div>
       </div>
 
       {/* Search */}

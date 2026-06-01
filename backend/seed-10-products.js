@@ -35,9 +35,9 @@ async function main() {
     await client.query(`
       INSERT INTO products (
         id, category_id, name, slug, description,
-        original_price, selling_price, stock_quantity,
+        price, discount_price, stock_count,
         is_featured, is_flash_sale, is_active,
-        image_url, 
+        images, 
         created_at, updated_at
       ) VALUES (
         $1, $2, $3, $4, $5,
@@ -52,7 +52,7 @@ async function main() {
       p.desc,
       p.original, p.sell, 50,
       true, true, true,
-      '/cotton_saree_3d.png' // Using the 3d cotton placeholder image we have
+      ['/cotton_saree_3d.png'] // Using the 3d cotton placeholder image we have
     ])
     console.log(`Inserted: ${p.name}`)
   }

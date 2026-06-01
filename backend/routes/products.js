@@ -84,6 +84,143 @@ router.get('/admin/detail/:id', auth, adminOnly, async (req, res) => {
   }
 })
 
+// POST /api/products/admin/seed-defaults — admin only
+router.post('/admin/seed-defaults', auth, adminOnly, async (req, res) => {
+  try {
+    // 1. Fetch categories
+    const { data: catData, error: catErr } = await supabase
+      .from('categories')
+      .select('id, slug')
+    
+    if (catErr) throw catErr
+
+    const categories = {}
+    catData.forEach(row => { categories[row.slug] = row.id })
+
+    // 2. Define the static products with categories, prices, stock and beautiful Unsplash images
+    const productsData = [
+      { 
+        slug: 'sarees', 
+        name: 'Premium Kanchipuram Silk Saree', 
+        desc: 'Handwoven pure silk saree with traditional gold zari border.', 
+        price: 8999, 
+        discount_price: 7599, 
+        image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=600&q=80' 
+      },
+      { 
+        slug: 'sarees', 
+        name: 'Banarasi Cotton Blend Saree', 
+        desc: 'Lightweight and highly comfortable saree designed for festive wear.', 
+        price: 4599, 
+        discount_price: 3299, 
+        image: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=600&q=80' 
+      },
+      { 
+        slug: 'kadi-fabrics', 
+        name: 'Authentic Handspun Kadi Fabric', 
+        desc: '100% pure organic handspun kadi fabric sold by the meter.', 
+        price: 899, 
+        discount_price: 599, 
+        image: 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=600&q=80' 
+      },
+      { 
+        slug: 'dress-materials', 
+        name: 'Churidar Dress Material Unstitched', 
+        desc: 'Beautiful embroidery patterns on premium cotton material.', 
+        price: 2999, 
+        discount_price: 1899, 
+        image: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=600&q=80' 
+      },
+      { 
+        slug: 'dupattas', 
+        name: 'Designer Phulkari Dupatta', 
+        desc: 'Vibrant ethnic colors and intricate embroidery thread work.', 
+        price: 1499, 
+        discount_price: 999, 
+        image: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=600&q=80' 
+      },
+      { 
+        slug: 'kurtas-sets', 
+        name: 'Men\'s Festive Kurta Pajama Set', 
+        desc: 'Comfortable fit, elegant ethnic wear for celebrations.', 
+        price: 3499, 
+        discount_price: 2499, 
+        image: 'https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?auto=format&fit=crop&w=600&q=80' 
+      },
+      { 
+        slug: 'kurtas-sets', 
+        name: 'Women\'s A-Line Kurta Set', 
+        desc: 'Breathable cotton kurta set paired with matching palazzo pants.', 
+        price: 2899, 
+        discount_price: 1999, 
+        image: 'https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?auto=format&fit=crop&w=600&q=80' 
+      },
+      { 
+        slug: 'bedsheets', 
+        name: 'King Size Cotton Bedsheet', 
+        desc: 'Includes 2 pillow covers. 300 Thread Count pure cotton.', 
+        price: 2599, 
+        discount_price: 1799, 
+        image: 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&w=600&q=80' 
+      },
+      { 
+        slug: 'towels', 
+        name: 'Luxury Bath Towel Set', 
+        desc: 'Super absorbent, 100% organic cotton bath towels.', 
+        price: 1299, 
+        discount_price: 899, 
+        image: 'https://images.unsplash.com/photo-1616627561950-9f746e330187?auto=format&fit=crop&w=600&q=80' 
+      },
+      { 
+        slug: 'accessories', 
+        name: 'Traditional Potli Bag', 
+        desc: 'Beautifully handcrafted potli bag featuring detailed bead work.', 
+        price: 999, 
+        discount_price: 699, 
+        image: 'https://images.unsplash.com/photo-1601924994987-69e26d50dc26?auto=format&fit=crop&w=600&q=80' 
+      }
+    ]
+
+    const insertedProducts = []
+
+    for (const p of productsData) {
+      const catId = categories[p.slug]
+      if (!catId) continue
+
+      // Generate a unique slug
+      const productSlug = p.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Date.now() + '-' + Math.floor(Math.random() * 1000)
+
+      const { data, error } = await supabase
+        .from('products')
+        .insert({
+          category_id: catId,
+          name: p.name,
+          slug: productSlug,
+          description: p.desc,
+          price: p.price,
+          discount_price: p.discount_price,
+          stock_count: 50,
+          is_featured: true,
+          is_flash_sale: true,
+          is_active: true,
+          images: [p.image]
+        })
+        .select()
+        .single()
+
+      if (error) {
+        console.error(`Error inserting ${p.name}:`, error.message)
+      } else {
+        insertedProducts.push(data)
+      }
+    }
+
+    res.json({ success: true, count: insertedProducts.length, data: insertedProducts })
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message })
+  }
+})
+
 // GET /api/products/:slug
 router.get('/:slug', async (req, res) => {
   try {

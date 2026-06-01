@@ -21,12 +21,16 @@ router.get('/', auth, async (req, res) => {
 // GET /api/orders/:id
 router.get('/:id', auth, async (req, res) => {
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from('orders')
       .select('*, order_items(*, products(name, images, slug)), addresses(*)')
       .eq('id', req.params.id)
-      .eq('user_id', req.user.id)
-      .single()
+
+    if (req.profile?.role !== 'admin') {
+      query = query.eq('user_id', req.user.id)
+    }
+
+    const { data, error } = await query.single()
     if (error || !data) return res.status(404).json({ success: false, message: 'Order not found' })
     res.json({ success: true, data })
   } catch (err) {

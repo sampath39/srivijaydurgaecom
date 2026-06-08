@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { motion } from 'framer-motion'
-import { User, Mail, Phone, Camera, MapPin, Plus, Trash2, Edit, CheckCircle } from 'lucide-react'
+import { User, Mail, Phone, Camera, MapPin, Plus, Trash2, Edit, CheckCircle, Search } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import api from '../../lib/axios'
 import { setProfile } from '../../store/slices/authSlice'
 import toast from 'react-hot-toast'
+import { loadGoogleMapsScript, parseGooglePlace, searchAddressOSM } from '../../lib/maps'
 
 export default function ProfilePage() {
   const dispatch = useDispatch()
@@ -42,6 +43,83 @@ export default function ProfilePage() {
     setAddresses(a => [...a, data.data])
     setAddrForm(null)
     toast.success('Address saved!')
+  }
+
+  const [googleLoaded, setGoogleLoaded] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [suggestions, setSuggestions] = useState([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
+
+  // Load Google Maps Autocomplete when addrForm changes to non-null
+  useEffect(() => {
+    if (!addrForm) return
+    loadGoogleMapsScript((success) => {
+      setGoogleLoaded(success)
+      if (success && window.google) {
+        setTimeout(() => {
+          const input = document.getElementById('profile-addr-search-autocomplete')
+          if (input) {
+            const autocomplete = new window.google.maps.places.Autocomplete(input, {
+              componentRestrictions: { country: 'in' },
+              fields: ['address_components', 'formatted_address', 'geometry', 'name']
+            })
+            autocomplete.addListener('place_changed', () => {
+              const place = autocomplete.getPlace()
+              const parsed = parseGooglePlace(place)
+              if (parsed) {
+                setAddrForm(f => ({
+                  ...f,
+                  address_line1: parsed.address_line1,
+                  address_line2: parsed.address_line2 || f.address_line2,
+                  city: parsed.city || f.city,
+                  state: parsed.state || f.state,
+                  pincode: parsed.pincode || f.pincode,
+                }))
+                setSearchQuery(place.formatted_address || '')
+                toast.success('Address populated from Google Maps!')
+              }
+            })
+          }
+        }, 300)
+      }
+    })
+  }, [addrForm])
+
+  // Handle outside click to hide suggestions
+  useEffect(() => {
+    const handleOutsideClick = () => setShowSuggestions(false)
+    window.addEventListener('click', handleOutsideClick)
+    return () => window.removeEventListener('click', handleOutsideClick)
+  }, [])
+
+  const handleSearchChange = async (e) => {
+    const val = e.target.value
+    setSearchQuery(val)
+    if (googleLoaded) return // Google Autocomplete handles it
+    
+    if (val.length >= 3) {
+      const results = await searchAddressOSM(val)
+      setSuggestions(results)
+      setShowSuggestions(true)
+    } else {
+      setSuggestions([])
+      setShowSuggestions(false)
+    }
+  }
+
+  const handleSelectSuggestion = (s) => {
+    setAddrForm(f => ({
+      ...f,
+      address_line1: s.address_line1 || f.address_line1,
+      address_line2: s.address_line2 || f.address_line2,
+      city: s.city || f.city,
+      state: s.state || f.state,
+      pincode: s.pincode || f.pincode,
+    }))
+    setSearchQuery(s.display_name)
+    setSuggestions([])
+    setShowSuggestions(false)
+    toast.success('Address populated!')
   }
 
   const BLANK_ADDR = { full_name:'', phone:'', address_line1:'', address_line2:'', city:'', state:'', pincode:'', country:'India', is_default:false }
@@ -109,6 +187,40 @@ export default function ProfilePage() {
                 <div className="card p-5 border-2 border-primary-400">
                   <h3 className="font-semibold text-gray-900 dark:text-white mb-4">New Address</h3>
                   <div className="grid grid-cols-2 gap-3">
+                    <div className="col-span-2 relative" onClick={e => e.stopPropagation()}>
+                      <label className="label text-primary-600 dark:text-primary-400 font-semibold flex items-center gap-1.5">
+                        <MapPin className="w-4 h-4 text-primary-500" /> Search Address (Google Maps / Auto-fill)
+                      </label>
+                      <div className="relative font-normal">
+                        <input
+                          id="profile-addr-search-autocomplete"
+                          type="text"
+                          placeholder="Start typing your address..."
+                          className="input text-sm pl-10"
+                          value={searchQuery}
+                          onChange={handleSearchChange}
+                          onFocus={() => setShowSuggestions(true)}
+                        />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        
+                        {/* Suggestions Dropdown for OSM fallback */}
+                        {showSuggestions && suggestions.length > 0 && (
+                          <div className="absolute z-50 left-0 right-0 mt-1 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-600 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                            {suggestions.map((s, idx) => (
+                              <button
+                                key={idx}
+                                type="button"
+                                className="w-full text-left px-4 py-3 text-xs hover:bg-primary-50 dark:hover:bg-primary-900/20 text-gray-700 dark:text-gray-300 border-b border-gray-100 dark:border-dark-700 last:border-0 truncate"
+                                onClick={() => handleSelectSuggestion(s)}
+                              >
+                                {s.display_name}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
                     {[{k:'full_name',l:'Full Name *',c:1},{k:'phone',l:'Phone *',c:1},{k:'address_line1',l:'Address Line 1 *',c:2},{k:'address_line2',l:'Address Line 2',c:2},{k:'city',l:'City *',c:1},{k:'state',l:'State *',c:1},{k:'pincode',l:'Pincode *',c:1}].map(f=>(
                       <div key={f.k} className={f.c===2?'col-span-2':''}>
                         <label className="label">{f.l}</label>

@@ -4,13 +4,14 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   MapPin, Plus, CreditCard, Tag, Gift, CheckCircle,
   Trash2, Truck, AlertCircle, Loader2, Banknote, Locate,
-  ChevronRight, ShieldCheck
+  ChevronRight, ShieldCheck, Search
 } from 'lucide-react'
 import { useSelector, useDispatch } from 'react-redux'
 import { selectCartItems, selectCartTotal, clearCart } from '../../store/slices/cartSlice'
 import { setProfile } from '../../store/slices/authSlice'
 import api from '../../lib/axios'
 import toast from 'react-hot-toast'
+import { loadGoogleMapsScript, parseGooglePlace, searchAddressOSM } from '../../lib/maps'
 
 // ── Validation ────────────────────────────────────────────────
 const INDIAN_PHONE = /^(?:\+91|0)?[6-9]\d{9}$/
@@ -99,6 +100,86 @@ export default function CheckoutPage() {
   const [savingAddr, setSavingAddr]   = useState(false)
   const [deletingId, setDeletingId]   = useState(null)
   const [locating, setLocating]       = useState(false)
+
+  // Maps Autocomplete States
+  const [googleLoaded, setGoogleLoaded] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [suggestions, setSuggestions] = useState([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
+
+  // Load Google Maps Place Autocomplete
+  useEffect(() => {
+    if (!showNewAddr) return
+    loadGoogleMapsScript((success) => {
+      setGoogleLoaded(success)
+      if (success && window.google) {
+        setTimeout(() => {
+          const input = document.getElementById('addr-search-autocomplete')
+          if (input) {
+            const autocomplete = new window.google.maps.places.Autocomplete(input, {
+              componentRestrictions: { country: 'in' },
+              fields: ['address_components', 'formatted_address', 'geometry', 'name']
+            })
+            autocomplete.addListener('place_changed', () => {
+              const place = autocomplete.getPlace()
+              const parsed = parseGooglePlace(place)
+              if (parsed) {
+                setAddrForm(f => ({
+                  ...f,
+                  address_line1: parsed.address_line1,
+                  address_line2: parsed.address_line2 || f.address_line2,
+                  city: parsed.city || f.city,
+                  state: parsed.state || f.state,
+                  pincode: parsed.pincode || f.pincode,
+                }))
+                setSearchQuery(place.formatted_address || '')
+                setAddrErrors({})
+                toast.success('Address populated from Google Maps!')
+              }
+            })
+          }
+        }, 300)
+      }
+    })
+  }, [showNewAddr])
+
+  // Handle click outside suggestions dropdown
+  useEffect(() => {
+    const handleOutsideClick = () => setShowSuggestions(false)
+    window.addEventListener('click', handleOutsideClick)
+    return () => window.removeEventListener('click', handleOutsideClick)
+  }, [])
+
+  const handleSearchChange = async (e) => {
+    const val = e.target.value
+    setSearchQuery(val)
+    if (googleLoaded) return // Google Autocomplete handles inputs directly
+    
+    if (val.length >= 3) {
+      const results = await searchAddressOSM(val)
+      setSuggestions(results)
+      setShowSuggestions(true)
+    } else {
+      setSuggestions([])
+      setShowSuggestions(false)
+    }
+  }
+
+  const handleSelectSuggestion = (s) => {
+    setAddrForm(f => ({
+      ...f,
+      address_line1: s.address_line1 || f.address_line1,
+      address_line2: s.address_line2 || f.address_line2,
+      city: s.city || f.city,
+      state: s.state || f.state,
+      pincode: s.pincode || f.pincode,
+    }))
+    setSearchQuery(s.display_name)
+    setSuggestions([])
+    setShowSuggestions(false)
+    setAddrErrors({})
+    toast.success('Address populated!')
+  }
 
   // Payment
   const [payMethod, setPayMethod]     = useState(null) // null = not chosen yet
@@ -434,6 +515,40 @@ export default function CheckoutPage() {
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
+                    <div className="col-span-2 relative" onClick={e => e.stopPropagation()}>
+                      <label className="label text-primary-600 dark:text-primary-400 font-semibold flex items-center gap-1.5">
+                        <MapPin className="w-4 h-4 text-primary-500" /> Search Address (Google Maps / Auto-fill)
+                      </label>
+                      <div className="relative">
+                        <input
+                          id="addr-search-autocomplete"
+                          type="text"
+                          placeholder="Start typing your address (e.g. Arundelpet, Guntur...)"
+                          className="input text-sm pl-10"
+                          value={searchQuery}
+                          onChange={handleSearchChange}
+                          onFocus={() => setShowSuggestions(true)}
+                        />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        
+                        {/* Suggestions Dropdown for OSM fallback */}
+                        {showSuggestions && suggestions.length > 0 && (
+                          <div className="absolute z-50 left-0 right-0 mt-1 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-600 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                            {suggestions.map((s, idx) => (
+                              <button
+                                key={idx}
+                                type="button"
+                                className="w-full text-left px-4 py-3 text-xs hover:bg-primary-50 dark:hover:bg-primary-900/20 text-gray-700 dark:text-gray-300 border-b border-gray-100 dark:border-dark-700 last:border-0 truncate"
+                                onClick={() => handleSelectSuggestion(s)}
+                              >
+                                {s.display_name}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
                     <div>
                       <label className="label">Full Name *</label>
                       <input value={addrForm.full_name} onChange={e => setField('full_name', e.target.value)} placeholder="e.g. Ramesh Kumar"

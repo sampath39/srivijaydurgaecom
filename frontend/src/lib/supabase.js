@@ -15,4 +15,11 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
 })
 
+export const getRedirectUrl = (path = '') => {
+  const siteUrl = import.meta.env.VITE_SITE_URL || window.location.origin
+  const base = siteUrl.endsWith('/') ? siteUrl.slice(0, -1) : siteUrl
+  return `${base}${path}`
+}
+
 export default supabase
+

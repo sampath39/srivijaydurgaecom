@@ -6,7 +6,7 @@ import { z } from 'zod'
 import { motion } from 'framer-motion'
 import { User, Mail, Lock, Phone, Eye, EyeOff, Gift } from 'lucide-react'
 import { FaGoogle } from 'react-icons/fa'
-import { supabase } from '../../lib/supabase'
+import { supabase, getRedirectUrl } from '../../lib/supabase'
 import toast from 'react-hot-toast'
 
 const schema = z.object({
@@ -33,7 +33,7 @@ export default function SignupPage() {
         password: data.password,
         options: {
           data: { full_name: data.full_name, phone: data.phone },
-          emailRedirectTo: `${window.location.origin}/login`,
+          emailRedirectTo: getRedirectUrl('/login'),
         },
       })
       if (error) {
@@ -61,7 +61,7 @@ export default function SignupPage() {
   const handleGoogle = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: window.location.origin },
+      options: { redirectTo: getRedirectUrl() },
     })
     if (error) toast.error(error.message)
   }

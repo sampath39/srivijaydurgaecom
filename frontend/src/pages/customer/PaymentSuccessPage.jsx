@@ -50,6 +50,13 @@ export default function PaymentSuccessPage() {
   const total_amount  = state?.total_amount  || 0
   const points_earned = state?.points_earned || 0
   const is_cod        = state?.is_cod        || false
+  const city          = state?.city          || ''
+  const pincode       = state?.pincode       || ''
+
+  const c = city.toLowerCase().trim()
+  const p = parseInt(pincode.replace(/\D/g, '') || '0', 10)
+  const isGuntur = c === 'guntur' || (p >= 522001 && p <= 522299)
+  const deliveryEstimate = isGuntur ? '1 day (Local Delivery)' : '5 days'
 
   useEffect(() => {
     if (!launched.current) { launchConfetti(); launched.current = true }
@@ -100,7 +107,7 @@ export default function PaymentSuccessPage() {
               <Package className="w-5 h-5 text-primary-500" />
               <div>
                 <p className="font-semibold text-gray-900 dark:text-white text-sm">Estimated Delivery</p>
-                <p className="text-gray-500 text-sm">5–7 business days</p>
+                <p className="text-gray-500 text-sm">{deliveryEstimate}</p>
               </div>
             </div>
           </div>

@@ -374,6 +374,14 @@ router.post('/verify', auth, async (req, res) => {
     }
   } catch (e) { console.warn('[verify] points deduct exception:', e.message) }
 
+  // Reset special_discount to 0 after it is used (one-time discount)
+  if (details.specialDiscountAmount > 0) {
+    try {
+      await supabase.from('profiles').update({ special_discount: 0 }).eq('id', req.user.id)
+      console.log(`[verify] Special discount reset to 0 for user ${req.user.id}`)
+    } catch (e) { console.warn('[verify] special_discount reset error:', e.message) }
+  }
+
   // Clear cart
   await supabase.from('carts').delete().eq('user_id', req.user.id)
 
@@ -506,6 +514,14 @@ router.post('/cod', auth, async (req, res) => {
         description: `Redeemed for COD order ${order.order_number}`, order_id: order.id,
       })
       await supabase.rpc('increment_points', { p_user_id: req.user.id, p_points: -details.usablePoints })
+    }
+
+    // Reset special_discount to 0 after it is used (one-time discount)
+    if (details.specialDiscountAmount > 0) {
+      try {
+        await supabase.from('profiles').update({ special_discount: 0 }).eq('id', req.user.id)
+        console.log(`[cod] Special discount reset to 0 for user ${req.user.id}`)
+      } catch (e) { console.warn('[cod] special_discount reset error:', e.message) }
     }
 
     // Clear cart & coupon usage

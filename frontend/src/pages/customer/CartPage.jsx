@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { Trash2, Plus, Minus, Tag, ArrowRight, ShoppingBag, X } from 'lucide-react'
 import { useDispatch, useSelector } from 'react-redux'
 import { removeFromCart, updateQuantity, selectCartItems, selectCartTotal } from '../../store/slices/cartSlice'
+import { setProfile } from '../../store/slices/authSlice'
 import api from '../../lib/axios'
 import toast from 'react-hot-toast'
 
@@ -12,14 +13,17 @@ export default function CartPage() {
   const navigate  = useNavigate()
   const items     = useSelector(selectCartItems)
   const subtotal  = useSelector(selectCartTotal)
+  const profile   = useSelector(s => s.auth.profile)
   const [coupon, setCoupon]     = useState('')
   const [couponData, setCouponData] = useState(null)
   const [couponErr, setCouponErr]   = useState('')
   const [applying, setApplying]     = useState(false)
 
-  const shipping = subtotal > 999 ? 0 : 50
-  const discount = couponData?.discount || 0
-  const total    = subtotal - discount + shipping
+  const shipping        = subtotal > 999 ? 0 : 50
+  const discount        = couponData?.discount || 0
+  const specialDiscount = profile?.special_discount > 0
+    ? Math.round((subtotal * profile.special_discount) / 100) : 0
+  const total           = subtotal - discount - specialDiscount + shipping
 
   const applyCoupon = async () => {
     if (!coupon.trim()) return
@@ -39,6 +43,13 @@ export default function CartPage() {
   }
 
   const removeCoupon = () => { setCouponData(null); setCoupon(''); setCouponErr('') }
+
+  // Fetch fresh profile on cart load so admin-applied special_discount shows immediately
+  useEffect(() => {
+    api.get('/auth/profile').then(({ data }) => {
+      if (data?.data) dispatch(setProfile(data.data))
+    }).catch(() => {})
+  }, [])
 
   if (items.length === 0) return (
     <div className="min-h-[70vh] flex flex-col items-center justify-center text-center page-container py-16">
@@ -138,6 +149,12 @@ export default function CartPage() {
                 <div className="flex justify-between text-green-600">
                   <span>Coupon Discount</span>
                   <span className="font-semibold">-₹{discount.toLocaleString('en-IN')}</span>
+                </div>
+              )}
+              {specialDiscount > 0 && (
+                <div className="flex justify-between text-indigo-600 dark:text-indigo-400 font-semibold">
+                  <span>Special Discount ({profile.special_discount}%)</span>
+                  <span>-₹{specialDiscount.toLocaleString('en-IN')}</span>
                 </div>
               )}
               <div className="flex justify-between text-gray-600 dark:text-gray-400">

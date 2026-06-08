@@ -131,6 +131,21 @@ export default function OrderDetailPage() {
                   {order.payment_status}
                 </span>
               </div>
+              {addr && (
+                <div className="flex justify-between text-xs pt-1 border-t border-gray-100 dark:border-dark-700">
+                  <span className="text-gray-400">Estimated Delivery</span>
+                  <span className="font-semibold text-gray-700 dark:text-gray-300">
+                    {(() => {
+                      const c = (addr.city || '').toLowerCase().trim()
+                      const p = parseInt((addr.pincode || '').replace(/\D/g, '') || '0', 10)
+                      if (c === 'guntur' || (p >= 522001 && p <= 522299)) {
+                        return '1 day (Local Delivery)'
+                      }
+                      return '5 days'
+                    })()}
+                  </span>
+                </div>
+              )}
               {order.payment_method === 'razorpay' && order.payment_status !== 'paid' && !['cancelled', 'refunded'].includes(order.status) && (
                 <button
                   onClick={() => navigate('/checkout')}

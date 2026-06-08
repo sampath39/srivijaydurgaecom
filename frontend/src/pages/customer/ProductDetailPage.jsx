@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Heart, ShoppingCart, Star, Truck, Shield, RefreshCcw, Share2, ChevronLeft, ChevronRight, Zap, Plus, Minus, X } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
+import api from '../../lib/axios'
 import { useDispatch, useSelector } from 'react-redux'
 import { addToCart, openCart } from '../../store/slices/cartSlice'
 import { toggleWishlist, selectIsWishlisted } from '../../store/slices/wishlistSlice'
@@ -29,6 +30,35 @@ export default function ProductDetailPage() {
   const [zoomScale, setZoomScale] = useState(1)
 
   const isWished = useSelector(selectIsWishlisted(product?.id))
+
+  const [deliveryPincode, setDeliveryPincode] = useState('')
+  const [estTime, setEstTime] = useState(null)
+
+  useEffect(() => {
+    if (user) {
+      api.get('/addresses').then(({ data }) => {
+        const list = data.data || []
+        const def = list.find(a => a.is_default) || list[0]
+        if (def && def.pincode) {
+          setDeliveryPincode(def.pincode)
+          const p = parseInt(def.pincode.replace(/\D/g, '') || '0', 10)
+          const cityLower = (def.city || '').toLowerCase().trim()
+          const isGuntur = cityLower === 'guntur' || (p >= 522001 && p <= 522299)
+          setEstTime({ isGuntur, city: def.city || 'Guntur' })
+        }
+      }).catch(() => null)
+    }
+  }, [user])
+
+  const calculateDeliveryTime = (pinCode) => {
+    if (!/^\d{6}$/.test(pinCode)) {
+      toast.error('Please enter a valid 6-digit pincode')
+      return
+    }
+    const pin = parseInt(pinCode.replace(/\D/g, '') || '0', 10)
+    const isGuntur = pin >= 522001 && pin <= 522299
+    setEstTime({ isGuntur, city: isGuntur ? 'Guntur' : 'Other' })
+  }
 
   useEffect(() => {
     setLoading(true)
@@ -294,6 +324,50 @@ export default function ProductDetailPage() {
                   <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight">{f.text}</p>
                 </div>
               ))}
+            </div>
+
+            {/* Delivery Estimation Checker */}
+            <div className="pt-4 border-t border-gray-100 dark:border-dark-700 space-y-2.5">
+              <h3 className="font-semibold text-gray-900 dark:text-white text-sm flex items-center gap-1.5">
+                <Truck className="w-4 h-4 text-primary-500" /> Delivery Estimate
+              </h3>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  maxLength={6}
+                  placeholder="Enter 6-digit Pincode"
+                  className="input py-2 text-xs flex-1 max-w-[180px] tracking-wide"
+                  value={deliveryPincode}
+                  onChange={e => {
+                    const val = e.target.value.replace(/\D/g, '').slice(0, 6)
+                    setDeliveryPincode(val)
+                    if (val.length === 6) {
+                      calculateDeliveryTime(val)
+                    } else {
+                      setEstTime(null)
+                    }
+                  }}
+                />
+                <button
+                  onClick={() => calculateDeliveryTime(deliveryPincode)}
+                  className="btn-primary py-2 px-4 text-xs font-semibold"
+                >
+                  Check
+                </button>
+              </div>
+              {estTime && (
+                <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="text-xs">
+                  {estTime.isGuntur ? (
+                    <p className="text-green-600 font-semibold flex items-center gap-1">
+                      <span>🎉 Local delivery to <strong>Guntur</strong> in <strong>1 day</strong>!</span>
+                    </p>
+                  ) : (
+                    <p className="text-gray-600 dark:text-gray-400 font-medium">
+                      Estimated delivery: <strong>5 days</strong> (Outside Guntur)
+                    </p>
+                  )}
+                </motion.div>
+              )}
             </div>
 
             {/* Description */}

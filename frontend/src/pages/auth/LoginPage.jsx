@@ -6,7 +6,7 @@ import { z } from 'zod'
 import { motion } from 'framer-motion'
 import { Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react'
 import { FaGoogle } from 'react-icons/fa'
-import { supabase } from '../../lib/supabase'
+import { supabase, getRedirectUrl } from '../../lib/supabase'
 import store from '../../store'
 import { setUser, setProfile, setLoading, setSession } from '../../store/slices/authSlice'
 import toast from 'react-hot-toast'
@@ -83,7 +83,7 @@ export default function LoginPage() {
   const handleGoogle = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: window.location.origin },
+      options: { redirectTo: getRedirectUrl() },
     })
     if (error) toast.error(error.message)
   }

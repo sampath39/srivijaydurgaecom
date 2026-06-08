@@ -4,8 +4,8 @@ import { Package, Search, Edit, Trash2, ChevronLeft, ChevronRight, Eye } from 'l
 import api from '../../lib/axios'
 import toast from 'react-hot-toast'
 
-const STATUS_OPTIONS = ['pending','confirmed','processing','shipped','delivered','cancelled']
-const STATUS_COLORS  = { pending:'badge-yellow', confirmed:'badge-blue', processing:'badge-purple', shipped:'badge-gold', delivered:'badge-green', cancelled:'badge-red' }
+const STATUS_OPTIONS = ['pending','confirmed','processing','shipped','delivered','cancelled','refunded']
+const STATUS_COLORS  = { pending:'badge-yellow', confirmed:'badge-blue', processing:'badge-purple', shipped:'badge-gold', delivered:'badge-green', cancelled:'badge-red', refunded:'badge-gray' }
 
 export default function AdminOrdersPage() {
   const [orders, setOrders]   = useState([])

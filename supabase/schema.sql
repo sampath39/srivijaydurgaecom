@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   referral_code TEXT UNIQUE DEFAULT upper(substring(gen_random_uuid()::text, 1, 8)),
   referred_by   UUID REFERENCES public.profiles(id),
   reward_points INTEGER DEFAULT 0,
+  special_discount NUMERIC(5,2) DEFAULT 0,  -- admin-set one-time percentage discount (auto-resets to 0 after order)
   is_active     BOOLEAN DEFAULT true,
   created_at    TIMESTAMPTZ DEFAULT now(),
   updated_at    TIMESTAMPTZ DEFAULT now()
@@ -350,14 +351,23 @@ BEGIN
   INSERT INTO public.profiles (id, email, full_name, avatar_url, phone)
   VALUES (
     NEW.id,
-    NEW.email,
-    NEW.raw_user_meta_data->>'full_name',
-    NEW.raw_user_meta_data->>'avatar_url',
-    NEW.raw_user_meta_data->>'phone'
-  );
+    COALESCE(NEW.email, ''),
+    COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name', ''),
+    COALESCE(NEW.raw_user_meta_data->>'avatar_url', NEW.raw_user_meta_data->>'picture', ''),
+    COALESCE(NEW.raw_user_meta_data->>'phone', '')
+  )
+  ON CONFLICT (id) DO UPDATE SET
+    email = EXCLUDED.email,
+    full_name = COALESCE(NULLIF(profiles.full_name, ''), EXCLUDED.full_name),
+    avatar_url = COALESCE(NULLIF(profiles.avatar_url, ''), EXCLUDED.avatar_url),
+    phone = COALESCE(NULLIF(profiles.phone, ''), EXCLUDED.phone),
+    updated_at = now();
+  RETURN NEW;
+EXCEPTION WHEN OTHERS THEN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
 
 CREATE OR REPLACE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users

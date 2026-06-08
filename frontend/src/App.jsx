@@ -130,6 +130,29 @@ function AppInner() {
         store.dispatch(clearAuth())
       } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         store.dispatch(setSession(session))
+        // Fetch profile asynchronously on next tick to avoid deadlock
+        setTimeout(async () => {
+          try {
+            const { data: profile } = await supabase
+              .from('profiles').select('*').eq('id', session.user.id).single()
+            if (profile) {
+              store.dispatch(setProfile(profile))
+            } else {
+              // Auto-sync profile if not found
+              const { data: syncRes } = await supabase.from('profiles')
+                .upsert({
+                  id: session.user.id,
+                  email: session.user.email,
+                  full_name: session.user.user_metadata?.full_name || session.user.user_metadata?.name || 'Customer',
+                  avatar_url: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || ''
+                })
+                .select().single()
+              if (syncRes) store.dispatch(setProfile(syncRes))
+            }
+          } catch (err) {
+            console.error('Error fetching profile on auth change:', err)
+          }
+        }, 0)
       }
     })
     return () => subscription.unsubscribe()

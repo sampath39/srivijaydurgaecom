@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Mail, ArrowLeft, CheckCircle } from 'lucide-react'
-import { supabase } from '../../lib/supabase'
+import { supabase, getRedirectUrl } from '../../lib/supabase'
 import toast from 'react-hot-toast'
 
 export default function ForgotPasswordPage() {
@@ -14,7 +14,7 @@ export default function ForgotPasswordPage() {
     e.preventDefault()
     setLoading(true)
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
+      redirectTo: getRedirectUrl('/reset-password'),
     })
     if (error) toast.error(error.message)
     else setSent(true)

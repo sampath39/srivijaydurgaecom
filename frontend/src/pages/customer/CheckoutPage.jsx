@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { useSelector, useDispatch } from 'react-redux'
 import { selectCartItems, selectCartTotal, clearCart } from '../../store/slices/cartSlice'
+import { setProfile } from '../../store/slices/authSlice'
 import api from '../../lib/axios'
 import toast from 'react-hot-toast'
 
@@ -123,6 +124,11 @@ export default function CheckoutPage() {
 
   // ── Load saved addresses ───────────────────────────────────
   useEffect(() => {
+    // Fetch fresh profile so any admin-applied special_discount is captured
+    api.get('/auth/profile').then(({ data }) => {
+      if (data?.data) dispatch(setProfile(data.data))
+    }).catch(() => {/* silently ignore, use cached profile */})
+
     api.get('/addresses').then(({ data }) => {
       const list = data.data || []
       setAddresses(list)
@@ -213,7 +219,7 @@ export default function CheckoutPage() {
         coupon_code: couponData?.coupon?.code || '', points_to_use: pointsToUse,
       })
       dispatch(clearCart())
-      navigate('/orders/success', { state: { order_number: data.order_number, order_id: data.order_id, total_amount: data.total_amount, points_earned: data.points_earned, is_cod: true } })
+      navigate('/orders/success', { state: { order_number: data.order_number, order_id: data.order_id, total_amount: data.total_amount, points_earned: data.points_earned, is_cod: true, city: selectedAddr.city, pincode: selectedAddr.pincode } })
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to place COD order.')
     } finally { setPayLoading(false) }
@@ -280,7 +286,7 @@ export default function CheckoutPage() {
                 ...checkoutArgs
               })
               dispatch(clearCart())
-              navigate('/orders/success', { state: { order_number: v.order_number, order_id: v.order_id, total_amount: orderData.total_amount, points_earned: v.points_earned } })
+              navigate('/orders/success', { state: { order_number: v.order_number, order_id: v.order_id, total_amount: orderData.total_amount, points_earned: v.points_earned, city: selectedAddr.city, pincode: selectedAddr.pincode } })
             } catch (verifyErr) {
               handleFailure(verifyErr.response?.data?.message || 'Verification failed')
             }
@@ -306,7 +312,7 @@ export default function CheckoutPage() {
               ...checkoutArgs
             })
             dispatch(clearCart())
-            navigate('/orders/success', { state: { order_number: v.order_number, order_id: v.order_id, total_amount: orderData.total_amount, points_earned: v.points_earned } })
+            navigate('/orders/success', { state: { order_number: v.order_number, order_id: v.order_id, total_amount: orderData.total_amount, points_earned: v.points_earned, city: selectedAddr.city, pincode: selectedAddr.pincode } })
           } catch (verifyErr) {
             console.error('Verify error:', verifyErr.response?.data || verifyErr.message)
             const msg = verifyErr.response?.data?.message || verifyErr.message || 'Verification failed'
@@ -687,6 +693,21 @@ export default function CheckoutPage() {
               )}
               {shipping > 0 && payMethod !== 'cod' && (
                 <p className="text-xs text-gray-400">Add ₹{Math.max(0, 1000 - subtotal)} more for free delivery</p>
+              )}
+              {selectedAddr && (
+                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                  <span>Estimated Delivery</span>
+                  <span className="font-semibold text-gray-700 dark:text-gray-300">
+                    {(() => {
+                      const c = (selectedAddr.city || '').toLowerCase().trim()
+                      const p = parseInt((selectedAddr.pincode || '').replace(/\D/g, '') || '0', 10)
+                      if (c === 'guntur' || (p >= 522001 && p <= 522299)) {
+                        return '1 day (Local Delivery)'
+                      }
+                      return '5 days'
+                    })()}
+                  </span>
+                </div>
               )}
               <div className="border-t border-gray-100 dark:border-dark-700 pt-3 flex justify-between">
                 <span className="font-bold text-gray-900 dark:text-white text-base">Total</span>

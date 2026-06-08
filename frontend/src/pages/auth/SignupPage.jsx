@@ -22,6 +22,7 @@ export default function SignupPage() {
   const navigate = useNavigate()
   const [showPwd, setShowPwd] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
 
   const { register, handleSubmit, formState: { errors } } = useForm({ resolver: zodResolver(schema) })
 
@@ -59,11 +60,16 @@ export default function SignupPage() {
   }
 
   const handleGoogle = async () => {
+    if (googleLoading) return
+    setGoogleLoading(true)
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: getRedirectUrl() },
     })
-    if (error) toast.error(error.message)
+    if (error) {
+      toast.error(error.message)
+      setGoogleLoading(false)
+    }
   }
 
   return (
@@ -138,10 +144,16 @@ export default function SignupPage() {
         </div>
       </div>
 
-      <button onClick={handleGoogle}
-        className="w-full flex items-center justify-center gap-3 py-3 border border-white/20 rounded-xl text-white hover:bg-white/10 transition-all duration-200">
-        <FaGoogle className="w-5 h-5 text-red-400" />
-        <span className="font-medium">Continue with Google</span>
+      <button onClick={handleGoogle} disabled={googleLoading || loading}
+        className={`w-full flex items-center justify-center gap-3 py-3 border border-white/20 rounded-xl text-white hover:bg-white/10 transition-all duration-200 ${(googleLoading || loading) ? 'opacity-50 cursor-not-allowed' : ''}`}>
+        {googleLoading ? (
+          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+        ) : (
+          <>
+            <FaGoogle className="w-5 h-5 text-red-400" />
+            <span className="font-medium">Continue with Google</span>
+          </>
+        )}
       </button>
 
       <p className="text-center mt-6 text-gray-400 text-sm">

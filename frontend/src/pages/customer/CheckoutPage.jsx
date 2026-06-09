@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   MapPin, Plus, CreditCard, Tag, Gift, CheckCircle,
   Trash2, Truck, AlertCircle, Loader2, Banknote, Locate,
-  ChevronRight, ShieldCheck, Search
+  ChevronRight, ShieldCheck, Search, Map, X
 } from 'lucide-react'
 import { useSelector, useDispatch } from 'react-redux'
 import { selectCartItems, selectCartTotal, clearCart } from '../../store/slices/cartSlice'
@@ -51,11 +51,11 @@ function calcShipping(city, pincode, subtotal, payMethod) {
   if (payMethod !== 'cod') return subtotal > 999 ? 0 : 50
   const c = (city || '').toLowerCase().trim()
   const p = parseInt((pincode || '').replace(/\D/g, '') || '0', 10)
-  if (c === 'guntur' || (p >= 522001 && p <= 522299)) return 0        // Guntur — FREE
-  if (p >= 500000 && p <= 535999) return 40   // AP / Telangana
-  if (p >= 560000 && p <= 641999) return 80   // South India
-  if (p >= 400000 && p <= 431999) return 100  // Maharashtra / Goa
-  return 150                                   // Rest of India
+  if (c === 'guntur' || (p >= 522001 && p <= 522299)) return 0
+  if (p >= 500000 && p <= 535999) return 40
+  if (p >= 560000 && p <= 641999) return 80
+  if (p >= 400000 && p <= 431999) return 100
+  return 150
 }
 
 function shippingLabel(city, pincode, payMethod) {
@@ -71,7 +71,10 @@ function shippingLabel(city, pincode, payMethod) {
 
 // ── Reverse geocode (OpenStreetMap, free) ─────────────────────
 async function reverseGeocode(lat, lng) {
-  const res  = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1`, { headers: { 'Accept-Language': 'en' } })
+  const res  = await fetch(
+    `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1`,
+    { headers: { 'Accept-Language': 'en', 'User-Agent': 'SVDKE-App' } }
+  )
   const data = await res.json()
   const a    = data.address || {}
   return {
@@ -83,6 +86,205 @@ async function reverseGeocode(lat, lng) {
   }
 }
 
+// ── Leaflet Map Modal ─────────────────────────────────────────
+function MapPickerModal({ onClose, onSelect, initialLat, initialLng }) {
+  const mapRef = useRef(null)
+  const leafletMapRef = useRef(null)
+  const markerRef = useRef(null)
+  const [loading, setLoading] = useState(true)
+  const [geoInfo, setGeoInfo] = useState(null)
+  const [resolving, setResolving] = useState(false)
+
+  // Load Leaflet CSS + JS dynamically
+  useEffect(() => {
+    const loadLeaflet = async () => {
+      // Add CSS
+      if (!document.getElementById('leaflet-css')) {
+        const link = document.createElement('link')
+        link.id = 'leaflet-css'
+        link.rel = 'stylesheet'
+        link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'
+        document.head.appendChild(link)
+      }
+
+      // Add JS
+      if (!window.L) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script')
+          script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
+          script.onload = resolve
+          script.onerror = reject
+          document.body.appendChild(script)
+        })
+      }
+
+      initMap()
+    }
+
+    const initMap = () => {
+      if (!mapRef.current || leafletMapRef.current) return
+      const L = window.L
+      const startLat = initialLat || 16.3067  // Guntur default
+      const startLng = initialLng || 80.4365
+
+      const map = L.map(mapRef.current, { zoomControl: true }).setView([startLat, startLng], 15)
+      leafletMapRef.current = map
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors',
+        maxZoom: 19,
+      }).addTo(map)
+
+      // Custom red drop pin icon
+      const icon = L.divIcon({
+        className: '',
+        html: `<div style="
+          width:36px;height:36px;
+          background:linear-gradient(135deg,#f59e0b,#ef4444);
+          border-radius:50% 50% 50% 0;
+          transform:rotate(-45deg);
+          border:3px solid white;
+          box-shadow:0 4px 12px rgba(0,0,0,0.3);
+        "></div>`,
+        iconSize: [36, 36],
+        iconAnchor: [18, 36],
+        popupAnchor: [0, -36],
+      })
+
+      const marker = L.marker([startLat, startLng], { draggable: true, icon }).addTo(map)
+        .bindPopup('<b>📍 Drag me to your location</b>').openPopup()
+      markerRef.current = marker
+
+      const doReverseGeocode = async (lat, lng) => {
+        setResolving(true)
+        try {
+          const info = await reverseGeocode(lat, lng)
+          setGeoInfo({ lat, lng, ...info })
+        } catch {
+          setGeoInfo({ lat, lng, address_line1: '', address_line2: '', city: '', state: '', pincode: '' })
+        }
+        setResolving(false)
+      }
+
+      // Reverse geocode on drag end
+      marker.on('dragend', (e) => {
+        const { lat, lng } = e.target.getLatLng()
+        doReverseGeocode(lat, lng)
+      })
+
+      // Click on map to move pin
+      map.on('click', (e) => {
+        marker.setLatLng(e.latlng)
+        doReverseGeocode(e.latlng.lat, e.latlng.lng)
+      })
+
+      // Initial geocode
+      doReverseGeocode(startLat, startLng)
+      setLoading(false)
+    }
+
+    loadLeaflet().catch(() => {
+      setLoading(false)
+      toast.error('Could not load map. Please fill address manually.')
+    })
+
+    return () => {
+      if (leafletMapRef.current) {
+        leafletMapRef.current.remove()
+        leafletMapRef.current = null
+      }
+    }
+  }, [])
+
+  const handleConfirm = () => {
+    if (!geoInfo) return
+    const matched = INDIAN_STATES.find(s =>
+      s.toLowerCase().trim() === (geoInfo.state || '').toLowerCase().trim()
+    ) || ''
+    onSelect({
+      address_line1: geoInfo.address_line1,
+      address_line2: geoInfo.address_line2,
+      city: geoInfo.city,
+      state: matched,
+      pincode: geoInfo.pincode,
+    })
+    onClose()
+  }
+
+  return (
+    <div className="fixed inset-0 z-[9999] bg-black/70 flex items-center justify-center p-4 backdrop-blur-sm">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className="bg-white dark:bg-dark-800 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-dark-700">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-gradient-to-br from-amber-400 to-primary-600 rounded-lg flex items-center justify-center">
+              <Map className="w-4 h-4 text-white" />
+            </div>
+            <div>
+              <h3 className="font-bold text-gray-900 dark:text-white text-sm">Pick Location on Map</h3>
+              <p className="text-xs text-gray-400">Click or drag the pin to your exact location</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg transition-colors">
+            <X className="w-5 h-5 text-gray-500" />
+          </button>
+        </div>
+
+        {/* Map */}
+        <div className="relative">
+          {loading && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-gray-50 dark:bg-dark-700">
+              <div className="text-center">
+                <Loader2 className="w-8 h-8 animate-spin text-primary-500 mx-auto mb-2" />
+                <p className="text-sm text-gray-500">Loading map…</p>
+              </div>
+            </div>
+          )}
+          <div ref={mapRef} style={{ height: 360 }} />
+        </div>
+
+        {/* Geocoded address preview */}
+        <div className="p-4 bg-gray-50 dark:bg-dark-700/50">
+          {resolving ? (
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Getting address…
+            </div>
+          ) : geoInfo ? (
+            <div className="space-y-1">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Detected Address</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-white">
+                {[geoInfo.address_line1, geoInfo.address_line2, geoInfo.city, geoInfo.state, geoInfo.pincode]
+                  .filter(Boolean).join(', ') || 'Move the pin to get address details'}
+              </p>
+            </div>
+          ) : (
+            <p className="text-sm text-gray-400">Move the pin on the map to auto-fill your address</p>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-3 p-4 border-t border-gray-100 dark:border-dark-700">
+          <button onClick={onClose} className="btn-ghost flex-1 py-2.5 text-sm">Cancel</button>
+          <button
+            onClick={handleConfirm}
+            disabled={!geoInfo || resolving}
+            className="btn-primary flex-1 py-2.5 text-sm gap-2 disabled:opacity-50"
+          >
+            <CheckCircle className="w-4 h-4" />
+            Use This Location
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  )
+}
+
 export default function CheckoutPage() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -92,22 +294,27 @@ export default function CheckoutPage() {
   const profile  = useSelector(s => s.auth.profile)
 
   // Address
-  const [addresses, setAddresses]     = useState([])
+  const [addresses, setAddresses]       = useState([])
   const [selectedAddr, setSelectedAddr] = useState(null)
-  const [showNewAddr, setShowNewAddr] = useState(false)
-  const [addrForm, setAddrForm]       = useState(EMPTY_FORM)
-  const [addrErrors, setAddrErrors]   = useState({})
-  const [savingAddr, setSavingAddr]   = useState(false)
-  const [deletingId, setDeletingId]   = useState(null)
-  const [locating, setLocating]       = useState(false)
+  const [showNewAddr, setShowNewAddr]   = useState(false)
+  const [addrForm, setAddrForm]         = useState(EMPTY_FORM)
+  const [addrErrors, setAddrErrors]     = useState({})
+  const [savingAddr, setSavingAddr]     = useState(false)
+  const [deletingId, setDeletingId]     = useState(null)
+  const [locating, setLocating]         = useState(false)
 
-  // Maps Autocomplete States
-  const [googleLoaded, setGoogleLoaded] = useState(false)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [suggestions, setSuggestions] = useState([])
+  // Map picker
+  const [showMapPicker, setShowMapPicker] = useState(false)
+  const [mapInitLat, setMapInitLat]       = useState(null)
+  const [mapInitLng, setMapInitLng]       = useState(null)
+
+  // Google Maps Autocomplete
+  const [googleLoaded, setGoogleLoaded]   = useState(false)
+  const [searchQuery, setSearchQuery]     = useState('')
+  const [suggestions, setSuggestions]     = useState([])
   const [showSuggestions, setShowSuggestions] = useState(false)
 
-  // Load Google Maps Place Autocomplete
+  // Load Google Maps Place Autocomplete when new address form opens
   useEffect(() => {
     if (!showNewAddr) return
     loadGoogleMapsScript((success) => {
@@ -154,7 +361,6 @@ export default function CheckoutPage() {
     const val = e.target.value
     setSearchQuery(val)
     if (googleLoaded) return // Google Autocomplete handles inputs directly
-    
     if (val.length >= 3) {
       const results = await searchAddressOSM(val)
       setSuggestions(results)
@@ -182,12 +388,12 @@ export default function CheckoutPage() {
   }
 
   // Payment
-  const [payMethod, setPayMethod]     = useState(null) // null = not chosen yet
-  const [coupon, setCoupon]           = useState('')
-  const [couponData, setCouponData]   = useState(location.state?.couponData || null)
+  const [payMethod, setPayMethod]       = useState(null)
+  const [coupon, setCoupon]             = useState('')
+  const [couponData, setCouponData]     = useState(location.state?.couponData || null)
   const [couponLoading, setCouponLoading] = useState(false)
-  const [pointsToUse, setPointsToUse] = useState(0)
-  const [payLoading, setPayLoading]   = useState(false)
+  const [pointsToUse, setPointsToUse]   = useState(0)
+  const [payLoading, setPayLoading]     = useState(false)
 
   const specialDiscount = profile?.special_discount > 0
     ? Math.round((subtotal * profile.special_discount) / 100) : 0
@@ -199,16 +405,14 @@ export default function CheckoutPage() {
   const total     = Math.max(0, subtotal - discount - pointsVal - specialDiscount + shipping)
   const maxPoints = Math.min(profile?.reward_points || 0, (subtotal - discount - specialDiscount) * 100)
 
-  // Step logic
   const addrDone  = !!selectedAddr
   const payChosen = !!payMethod
 
   // ── Load saved addresses ───────────────────────────────────
   useEffect(() => {
-    // Fetch fresh profile so any admin-applied special_discount is captured
     api.get('/auth/profile').then(({ data }) => {
       if (data?.data) dispatch(setProfile(data.data))
-    }).catch(() => {/* silently ignore, use cached profile */})
+    }).catch(() => {})
 
     api.get('/addresses').then(({ data }) => {
       const list = data.data || []
@@ -219,30 +423,45 @@ export default function CheckoutPage() {
     }).catch(() => { toast.error('Could not load addresses.'); setShowNewAddr(true) })
   }, [])
 
-  // ── Detect location ───────────────────────────────────────
+  // ── Detect GPS location ───────────────────────────────────
   const detectLocation = () => {
     if (!navigator.geolocation) { toast.error('Geolocation not supported'); return }
     setLocating(true)
-    navigator.geolocation.getCurrentPosition(async ({ coords }) => {
-      try {
-        const geo = await reverseGeocode(coords.latitude, coords.longitude)
-        const matched = INDIAN_STATES.find(s => s.toLowerCase() === (geo.state || '').toLowerCase()) || ''
-        setAddrForm(f => ({
-          ...f,
-          address_line1: geo.address_line1 || f.address_line1,
-          address_line2: geo.address_line2 || f.address_line2,
-          city: geo.city || f.city,
-          state: matched || f.state,
-          pincode: geo.pincode || f.pincode,
-        }))
-        setAddrErrors({})
-        toast.success('Location detected! Please verify and complete the form.')
-      } catch { toast.error('Could not get address from location.') }
-      finally   { setLocating(false) }
-    }, err => {
-      setLocating(false)
-      toast.error(err.code === 1 ? 'Location permission denied.' : 'Could not get location.')
-    }, { timeout: 10000, enableHighAccuracy: true })
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        setLocating(false)
+        // Open map centered at GPS coords
+        setMapInitLat(coords.latitude)
+        setMapInitLng(coords.longitude)
+        setShowMapPicker(true)
+      },
+      err => {
+        setLocating(false)
+        toast.error(err.code === 1 ? 'Location permission denied.' : 'Could not get location.')
+      },
+      { timeout: 10000, enableHighAccuracy: true }
+    )
+  }
+
+  // ── Open blank map picker (Guntur default) ─────────────────
+  const openMapPicker = () => {
+    setMapInitLat(null)
+    setMapInitLng(null)
+    setShowMapPicker(true)
+  }
+
+  // ── Map location selected callback ─────────────────────────
+  const handleMapSelect = (geo) => {
+    setAddrForm(f => ({
+      ...f,
+      address_line1: geo.address_line1 || f.address_line1,
+      address_line2: geo.address_line2 || f.address_line2,
+      city: geo.city || f.city,
+      state: geo.state || f.state,
+      pincode: geo.pincode || f.pincode,
+    }))
+    setAddrErrors({})
+    toast.success('📍 Location picked! Please verify and complete the form.')
   }
 
   // ── Save address ──────────────────────────────────────────
@@ -296,11 +515,23 @@ export default function CheckoutPage() {
     try {
       const cartPayload = items.map(i => ({ product_id: i.product.id, quantity: i.quantity, size: i.size }))
       const { data } = await api.post('/payments/cod', {
-        cart_items: cartPayload, address_id: selectedAddr.id,
-        coupon_code: couponData?.coupon?.code || '', points_to_use: pointsToUse,
+        cart_items: cartPayload,
+        address_id: selectedAddr.id,
+        coupon_code: couponData?.coupon?.code || '',
+        points_to_use: pointsToUse,
       })
       dispatch(clearCart())
-      navigate('/orders/success', { state: { order_number: data.order_number, order_id: data.order_id, total_amount: data.total_amount, points_earned: data.points_earned, is_cod: true, city: selectedAddr.city, pincode: selectedAddr.pincode } })
+      navigate('/orders/success', {
+        state: {
+          order_number: data.order_number,
+          order_id: data.order_id,
+          total_amount: data.total_amount,
+          points_earned: data.points_earned,
+          is_cod: true,
+          city: selectedAddr.city,
+          pincode: selectedAddr.pincode,
+        }
+      })
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to place COD order.')
     } finally { setPayLoading(false) }
@@ -310,8 +541,10 @@ export default function CheckoutPage() {
   const loadRazorpay = () => new Promise(resolve => {
     if (document.getElementById('rzp-script')) { resolve(true); return }
     const s = document.createElement('script')
-    s.id = 'rzp-script'; s.src = 'https://checkout.razorpay.com/v1/checkout.js'
-    s.onload = () => resolve(true); s.onerror = () => resolve(false)
+    s.id = 'rzp-script'
+    s.src = 'https://checkout.razorpay.com/v1/checkout.js'
+    s.onload = () => resolve(true)
+    s.onerror = () => resolve(false)
     document.body.appendChild(s)
   })
 
@@ -320,9 +553,13 @@ export default function CheckoutPage() {
     setPayLoading(true)
     try {
       const ok = await loadRazorpay()
-      if (!ok) { toast.error('Failed to load Razorpay.'); setPayLoading(false); return }
+      if (!ok) {
+        toast.error('Failed to load payment gateway. Please try again.')
+        setPayLoading(false)
+        return
+      }
+
       const cartPayload = items.map(i => ({ product_id: i.product.id, quantity: i.quantity, size: i.size }))
-      
       const checkoutArgs = {
         cart_items: cartPayload,
         address_id: selectedAddr.id,
@@ -332,84 +569,65 @@ export default function CheckoutPage() {
 
       const { data: orderData } = await api.post('/payments/create-order', checkoutArgs)
 
-      const handleFailure = async (errDescription) => {
+      const handleFailure = (errDescription) => {
         setPayLoading(false)
         navigate('/orders/failure', {
           state: {
-            total_amount: orderData.total_amount,
-            address:      selectedAddr,
-            items:        items.map(i => ({
-              product:  i.product,
-              quantity: i.quantity,
-              size:     i.size
-            })),
-            error:        errDescription || 'Payment was not completed',
-            coupon_code:  checkoutArgs.coupon_code,
-            points_to_use: checkoutArgs.points_to_use
+            total_amount:   orderData?.total_amount,
+            address:        selectedAddr,
+            items:          items.map(i => ({ product: i.product, quantity: i.quantity, size: i.size })),
+            error:          errDescription || 'Payment was not completed',
+            coupon_code:    checkoutArgs.coupon_code,
+            points_to_use:  checkoutArgs.points_to_use,
           }
         })
       }
 
-      if (orderData.razorpay_order_id && orderData.razorpay_order_id.startsWith('mock_')) {
-        const simulateSuccess = confirm(
-          "Razorpay is running in SIMULATION MODE (invalid keys on server).\n\n" +
-          "Click OK to simulate SUCCESSFUL payment.\n" +
-          "Click CANCEL to simulate FAILED payment."
-        )
-        if (simulateSuccess) {
-          toast.success('Simulation Mode: Simulating payment success...', { duration: 3000 })
-          setTimeout(async () => {
-            try {
-              const { data: v } = await api.post('/payments/verify', {
-                razorpay_order_id:   orderData.razorpay_order_id,
-                razorpay_payment_id: `mock_pay_${Date.now()}`,
-                razorpay_signature:  `mock_sig_${Date.now()}`,
-                ...checkoutArgs
-              })
-              dispatch(clearCart())
-              navigate('/orders/success', { state: { order_number: v.order_number, order_id: v.order_id, total_amount: orderData.total_amount, points_earned: v.points_earned, city: selectedAddr.city, pincode: selectedAddr.pincode } })
-            } catch (verifyErr) {
-              handleFailure(verifyErr.response?.data?.message || 'Verification failed')
-            }
-          }, 1500)
-        } else {
-          handleFailure('Simulated payment failure/cancellation')
-        }
-        return
-      }
-
       const options = {
-        key: orderData.key_id, amount: orderData.amount, currency: orderData.currency,
-        name: 'Sri Vijaya Durga Kadi Emporium', description: 'Order Payment',
-        order_id: orderData.razorpay_order_id, prefill: orderData.prefill,
-        theme: { color: '#F59E0B' },
-        modal: { ondismiss: () => { handleFailure('Payment cancelled by user') } },
+        key:         orderData.key_id,
+        amount:      orderData.amount,
+        currency:    orderData.currency,
+        name:        'Sri Vijaya Durga Kadi Emporium',
+        description: 'Order Payment',
+        order_id:    orderData.razorpay_order_id,
+        prefill:     orderData.prefill,
+        theme:       { color: '#F59E0B' },
+        modal:       { ondismiss: () => handleFailure('Payment cancelled by user') },
         handler: async (response) => {
           try {
             const { data: v } = await api.post('/payments/verify', {
               razorpay_order_id:   response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature:  response.razorpay_signature,
-              ...checkoutArgs
+              ...checkoutArgs,
             })
             dispatch(clearCart())
-            navigate('/orders/success', { state: { order_number: v.order_number, order_id: v.order_id, total_amount: orderData.total_amount, points_earned: v.points_earned, city: selectedAddr.city, pincode: selectedAddr.pincode } })
+            navigate('/orders/success', {
+              state: {
+                order_number:  v.order_number,
+                order_id:      v.order_id,
+                total_amount:  orderData.total_amount,
+                points_earned: v.points_earned,
+                city:          selectedAddr.city,
+                pincode:       selectedAddr.pincode,
+              }
+            })
           } catch (verifyErr) {
-            console.error('Verify error:', verifyErr.response?.data || verifyErr.message)
             const msg = verifyErr.response?.data?.message || verifyErr.message || 'Verification failed'
-            toast.error(`Order verification failed: ${msg}`, { duration: 8000 })
+            console.error('[checkout] Verify error:', msg)
+            toast.error(`Payment verification failed: ${msg}`, { duration: 8000 })
             handleFailure(msg)
           }
           setPayLoading(false)
         },
       }
+
       const rzp = new window.Razorpay(options)
-      rzp.on('payment.failed', (r) => {
-        handleFailure(r.error.description || 'Payment failed')
-      })
+      rzp.on('payment.failed', (r) => handleFailure(r.error.description || 'Payment failed'))
       rzp.open()
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to initiate payment.')
+      const msg = err.response?.data?.message || err.message || 'Failed to initiate payment.'
+      toast.error(msg)
       setPayLoading(false)
     }
   }
@@ -508,16 +726,23 @@ export default function CheckoutPage() {
                   className="overflow-hidden border-t border-gray-100 dark:border-dark-700 pt-5">
                   <div className="flex items-center justify-between mb-4">
                     <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">New Address</p>
-                    <button type="button" onClick={detectLocation} disabled={locating}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 rounded-lg shadow-sm disabled:opacity-60">
-                      {locating ? <><Loader2 className="w-3 h-3 animate-spin" />Detecting…</> : <><Locate className="w-3 h-3" />Use My Location</>}
-                    </button>
+                    {/* Location action buttons */}
+                    <div className="flex items-center gap-2">
+                      <button type="button" onClick={openMapPicker}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 rounded-lg shadow-sm">
+                        <Map className="w-3 h-3" /> Pick on Map
+                      </button>
+                      <button type="button" onClick={detectLocation} disabled={locating}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 rounded-lg shadow-sm disabled:opacity-60">
+                        {locating ? <><Loader2 className="w-3 h-3 animate-spin" />Detecting…</> : <><Locate className="w-3 h-3" />Use GPS</>}
+                      </button>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="col-span-2 relative" onClick={e => e.stopPropagation()}>
                       <label className="label text-primary-600 dark:text-primary-400 font-semibold flex items-center gap-1.5">
-                        <MapPin className="w-4 h-4 text-primary-500" /> Search Address (Google Maps / Auto-fill)
+                        <Search className="w-4 h-4 text-primary-500" /> Search Address (Google Maps / Auto-fill)
                       </label>
                       <div className="relative">
                         <input
@@ -530,7 +755,7 @@ export default function CheckoutPage() {
                           onFocus={() => setShowSuggestions(true)}
                         />
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                        
+
                         {/* Suggestions Dropdown for OSM fallback */}
                         {showSuggestions && suggestions.length > 0 && (
                           <div className="absolute z-50 left-0 right-0 mt-1 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-600 rounded-xl shadow-lg max-h-60 overflow-y-auto">
@@ -611,7 +836,7 @@ export default function CheckoutPage() {
             </AnimatePresence>
           </div>
 
-          {/* ── STEP 2: Payment Method (visible only after address selected) ── */}
+          {/* ── STEP 2: Payment Method ─────────────────── */}
           <AnimatePresence>
             {addrDone && (
               <motion.div
@@ -816,9 +1041,7 @@ export default function CheckoutPage() {
                     {(() => {
                       const c = (selectedAddr.city || '').toLowerCase().trim()
                       const p = parseInt((selectedAddr.pincode || '').replace(/\D/g, '') || '0', 10)
-                      if (c === 'guntur' || (p >= 522001 && p <= 522299)) {
-                        return '1 day (Local Delivery)'
-                      }
+                      if (c === 'guntur' || (p >= 522001 && p <= 522299)) return '1 day (Local Delivery)'
                       return '5 days'
                     })()}
                   </span>
@@ -830,7 +1053,7 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            {/* Address & payment method not chosen yet — prompt */}
+            {/* Prompts */}
             {!addrDone && (
               <div className="mb-4 flex items-center gap-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-xl text-amber-700 dark:text-amber-400 text-sm">
                 <AlertCircle className="w-4 h-4 shrink-0" /> Select or add a delivery address to continue
@@ -842,7 +1065,7 @@ export default function CheckoutPage() {
               </div>
             )}
 
-            {/* Pay button — only active after both steps */}
+            {/* Pay button */}
             {payChosen && (
               <motion.button
                 initial={{ opacity: 0, scale: 0.95 }}
@@ -882,6 +1105,18 @@ export default function CheckoutPage() {
           </div>
         </div>
       </div>
+
+      {/* ── Leaflet Map Picker Modal ──────────────────────── */}
+      <AnimatePresence>
+        {showMapPicker && (
+          <MapPickerModal
+            onClose={() => setShowMapPicker(false)}
+            onSelect={handleMapSelect}
+            initialLat={mapInitLat}
+            initialLng={mapInitLng}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 }

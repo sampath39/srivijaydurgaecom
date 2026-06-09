@@ -43,53 +43,56 @@ export default function ProductsPage() {
 
   useEffect(() => {
     setLoading(true)
-    try {
-      const safePage = page > 0 ? page : 1
-      const from = (safePage - 1) * LIMIT
-      const to = from + LIMIT - 1
+    async function fetchData() {
+      try {
+        const safePage = page > 0 ? page : 1
+        const from = (safePage - 1) * LIMIT
 
-      let query = supabase.from('products')
-        .select('*, categories!inner(name,slug)', { count: 'exact' })
-        .eq('is_active', true)
-
-      if (category)  query = query.eq('categories.slug', category)
-      if (featured)  query = query.eq('is_featured', true)
-      if (flashSale) query = query.eq('is_flash_sale', true)
-      if (minPrice)  query = query.gte('price', minPrice)
-      if (maxPrice)  query = query.lte('price', maxPrice)
-
-      const sortMap = {
-        newest:     ['created_at', false],
-        popular:    ['sold_count', false],
-        price_asc:  ['price', true],
-        price_desc: ['price', false],
-        rating:     ['avg_rating', false],
-      }
-      const [col, asc] = sortMap[sort] || ['created_at', false]
-      query = query.order(col, { ascending: asc }).range(from, to)
-
-      query.then(({ data, error, count }) => {
-        if (error) {
-          console.error("Supabase query error in ProductsPage:", error)
-          setProducts([])
-          setTotal(0)
-        } else {
-          setProducts(data || [])
-          setTotal(count || 0)
+        // Resolve category slug → category_id (ensures strict per-category filtering)
+        let categoryId = null
+        if (category) {
+          const { data: catData } = await supabase
+            .from('categories')
+            .select('id')
+            .eq('slug', category)
+            .single()
+          if (catData) categoryId = catData.id
         }
-        setLoading(false)
-      }).catch(err => {
-        console.error("Supabase query promise rejected in ProductsPage:", err)
+
+        let query = supabase.from('products')
+          .select('*, categories(name,slug)', { count: 'exact' })
+          .eq('is_active', true)
+
+        if (categoryId) query = query.eq('category_id', categoryId)
+        if (featured)   query = query.eq('is_featured', true)
+        if (flashSale)  query = query.eq('is_flash_sale', true)
+        if (minPrice)   query = query.gte('price', minPrice)
+        if (maxPrice)   query = query.lte('price', maxPrice)
+
+        const sortMap = {
+          newest:     ['created_at', false],
+          popular:    ['sold_count', false],
+          price_asc:  ['price', true],
+          price_desc: ['price', false],
+          rating:     ['avg_rating', false],
+        }
+        const [col, asc] = sortMap[sort] || ['created_at', false]
+        const { data, error, count } = await query
+          .order(col, { ascending: asc })
+          .range(from, from + LIMIT - 1)
+
+        if (error) throw error
+        setProducts(data || [])
+        setTotal(count || 0)
+      } catch (err) {
+        console.error('ProductsPage query error:', err)
         setProducts([])
         setTotal(0)
+      } finally {
         setLoading(false)
-      })
-    } catch (err) {
-      console.error("Failed to execute products query in ProductsPage:", err)
-      setProducts([])
-      setTotal(0)
-      setLoading(false)
+      }
     }
+    fetchData()
   }, [params])
 
   const updateParam = (key, val) => {

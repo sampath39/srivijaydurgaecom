@@ -15,6 +15,22 @@ const SORT_OPTIONS = [
   { value: 'rating',     label: 'Top Rated' },
 ]
 
+const PILL_COLORS = [
+  { base: 'bg-gradient-to-b from-blue-50 to-blue-200 border-b-4 border-blue-300 text-blue-900 hover:brightness-105 active:border-b-0 active:translate-y-1 active:mb-1', active: 'bg-gradient-to-b from-blue-200 to-blue-300 border-b-0 translate-y-1 mb-1 text-blue-900 shadow-inner ring-2 ring-blue-300 ring-offset-1' },
+  { base: 'bg-gradient-to-b from-pink-50 to-pink-200 border-b-4 border-pink-300 text-pink-900 hover:brightness-105 active:border-b-0 active:translate-y-1 active:mb-1', active: 'bg-gradient-to-b from-pink-200 to-pink-300 border-b-0 translate-y-1 mb-1 text-pink-900 shadow-inner ring-2 ring-pink-300 ring-offset-1' },
+  { base: 'bg-gradient-to-b from-green-50 to-green-200 border-b-4 border-green-300 text-green-900 hover:brightness-105 active:border-b-0 active:translate-y-1 active:mb-1', active: 'bg-gradient-to-b from-green-200 to-green-300 border-b-0 translate-y-1 mb-1 text-green-900 shadow-inner ring-2 ring-green-300 ring-offset-1' },
+  { base: 'bg-gradient-to-b from-purple-50 to-purple-200 border-b-4 border-purple-300 text-purple-900 hover:brightness-105 active:border-b-0 active:translate-y-1 active:mb-1', active: 'bg-gradient-to-b from-purple-200 to-purple-300 border-b-0 translate-y-1 mb-1 text-purple-900 shadow-inner ring-2 ring-purple-300 ring-offset-1' },
+  { base: 'bg-gradient-to-b from-orange-50 to-orange-200 border-b-4 border-orange-300 text-orange-900 hover:brightness-105 active:border-b-0 active:translate-y-1 active:mb-1', active: 'bg-gradient-to-b from-orange-200 to-orange-300 border-b-0 translate-y-1 mb-1 text-orange-900 shadow-inner ring-2 ring-orange-300 ring-offset-1' },
+  { base: 'bg-gradient-to-b from-teal-50 to-teal-200 border-b-4 border-teal-300 text-teal-900 hover:brightness-105 active:border-b-0 active:translate-y-1 active:mb-1', active: 'bg-gradient-to-b from-teal-200 to-teal-300 border-b-0 translate-y-1 mb-1 text-teal-900 shadow-inner ring-2 ring-teal-300 ring-offset-1' },
+  { base: 'bg-gradient-to-b from-rose-50 to-rose-200 border-b-4 border-rose-300 text-rose-900 hover:brightness-105 active:border-b-0 active:translate-y-1 active:mb-1', active: 'bg-gradient-to-b from-rose-200 to-rose-300 border-b-0 translate-y-1 mb-1 text-rose-900 shadow-inner ring-2 ring-rose-300 ring-offset-1' },
+  { base: 'bg-gradient-to-b from-indigo-50 to-indigo-200 border-b-4 border-indigo-300 text-indigo-900 hover:brightness-105 active:border-b-0 active:translate-y-1 active:mb-1', active: 'bg-gradient-to-b from-indigo-200 to-indigo-300 border-b-0 translate-y-1 mb-1 text-indigo-900 shadow-inner ring-2 ring-indigo-300 ring-offset-1' },
+]
+
+const ALL_PRODUCTS_COLOR = {
+  base: 'bg-gradient-to-b from-gray-100 to-gray-200 border-b-4 border-gray-300 text-gray-800 hover:brightness-105 active:border-b-0 active:translate-y-1 active:mb-1',
+  active: 'bg-gradient-to-b from-gray-200 to-gray-300 border-b-0 translate-y-1 mb-1 text-gray-900 shadow-inner ring-2 ring-gray-300 ring-offset-1'
+}
+
 export default function ProductsPage() {
   const [params, setParams]   = useSearchParams()
   const [products, setProducts] = useState([])
@@ -22,6 +38,7 @@ export default function ProductsPage() {
   const [loading, setLoading]   = useState(true)
   const [total, setTotal]       = useState(0)
   const [filterOpen, setFilterOpen] = useState(false)
+  const [showAllCats, setShowAllCats] = useState(false)
 
   const category    = params.get('category') || ''
   const subcategory = params.get('subcategory') || ''
@@ -124,33 +141,49 @@ export default function ProductsPage() {
 
   const selectedCatData = categories.find(c => c.slug === category)
 
+  const INITIAL_CATS_TO_SHOW = 11;
+  const displayedCategories = showAllCats ? categories : categories.slice(0, INITIAL_CATS_TO_SHOW);
+  const hiddenCount = categories.length - INITIAL_CATS_TO_SHOW;
+
+  // Make sure the active category is visible even if showAllCats is false
+  if (!showAllCats && category && !displayedCategories.find(c => c.slug === category)) {
+    displayedCategories.push(selectedCatData);
+  }
+
   return (
     <div className="page-container py-8">
       {/* Category Top Bar */}
-      <div className="w-full overflow-x-auto mb-4 pb-4">
-        <div className="flex gap-4 p-1 min-w-max">
+      <div className="w-full mb-6">
+        <div className="flex flex-wrap gap-3 p-2 justify-center md:justify-start">
           <button 
             onClick={() => updateParams({ category: '', subcategory: '' })}
-            className={`px-5 py-2.5 rounded-full whitespace-nowrap text-sm font-semibold transition-all shadow-sm ${!category ? 'bg-primary-600 text-white shadow-primary-500/30' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-100 dark:border-gray-700'}`}
+            className={`px-5 py-2 rounded-2xl whitespace-nowrap text-sm font-bold tracking-wide transition-all select-none ${!category ? ALL_PRODUCTS_COLOR.active : ALL_PRODUCTS_COLOR.base}`}
           >
             All Products
           </button>
-          {categories.map((cat) => {
+          {displayedCategories.map((cat, i) => {
+            const colorScheme = PILL_COLORS[i % PILL_COLORS.length];
             const isActive = category === cat.slug;
             return (
               <button 
                 key={cat.id}
                 onClick={() => updateParams({ category: cat.slug, subcategory: '' })}
-                className={`px-5 py-2.5 rounded-full whitespace-nowrap text-sm font-medium transition-all shadow-sm flex items-center gap-2 border 
-                  ${isActive 
-                    ? 'bg-primary-600 text-white shadow-primary-500/30 ring-2 ring-primary-600 ring-offset-2 ring-offset-white dark:ring-offset-gray-900 border-transparent' 
-                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 border-gray-100 dark:border-gray-700 hover:shadow-md'
-                  }`}
+                className={`px-5 py-2 rounded-2xl whitespace-nowrap text-sm font-bold tracking-wide transition-all select-none flex items-center gap-2
+                  ${isActive ? colorScheme.active : colorScheme.base}`}
               >
                 <span>{cat.icon || '🏷️'}</span> {cat.name}
               </button>
             )
           })}
+          
+          {categories.length > INITIAL_CATS_TO_SHOW && (
+            <button
+              onClick={() => setShowAllCats(!showAllCats)}
+              className="px-5 py-2 rounded-2xl whitespace-nowrap text-sm font-bold tracking-wide transition-all select-none bg-white border-b-4 border-gray-200 text-gray-600 hover:bg-gray-50 active:border-b-0 active:translate-y-1 active:mb-1 flex items-center gap-2"
+            >
+              {showAllCats ? 'Show Less ⬆️' : `+${hiddenCount} More ⬇️`}
+            </button>
+          )}
         </div>
       </div>
 
@@ -159,9 +192,9 @@ export default function ProductsPage() {
         <motion.div 
           initial={{ opacity: 0, y: -10 }} 
           animate={{ opacity: 1, y: 0 }} 
-          className="w-full overflow-x-auto mb-8 pb-4"
+          className="w-full mb-8"
         >
-          <div className="flex gap-3 min-w-max p-1">
+          <div className="flex flex-wrap justify-center md:justify-start gap-3 p-1">
             {selectedCatData.subcategories.map(sub => (
               <button 
                 key={sub}

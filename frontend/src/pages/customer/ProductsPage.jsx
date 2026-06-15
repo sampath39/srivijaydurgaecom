@@ -23,6 +23,7 @@ export default function ProductsPage() {
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false)
 
   const category    = params.get('category') || ''
+  const department  = params.get('department') || ''
   const subcategory = params.get('subcategory') || ''
   const sort        = params.get('sort')     || 'newest'
   const featured    = params.get('featured') || ''
@@ -41,6 +42,7 @@ export default function ProductsPage() {
 
         // Resolve category slug → category_id
         let categoryId = null
+        let categoryIds = []
         if (category) {
           const { data: catData } = await supabase
             .from('categories')
@@ -48,13 +50,21 @@ export default function ProductsPage() {
             .eq('slug', category)
             .single()
           if (catData) categoryId = catData.id
+        } else if (department && TAXONOMY[department]) {
+          const slugs = Object.values(TAXONOMY[department]).flat()
+          const { data: catsData } = await supabase.from('categories').select('id').in('slug', slugs)
+          if (catsData) categoryIds = catsData.map(c => c.id)
         }
 
         let query = supabase.from('products')
           .select('*, categories(name,slug)', { count: 'exact' })
           .eq('is_active', true)
 
-        if (categoryId) query = query.eq('category_id', categoryId)
+        if (categoryId) {
+          query = query.eq('category_id', categoryId)
+        } else if (categoryIds.length > 0) {
+          query = query.in('category_id', categoryIds)
+        }
         if (subcategory) query = query.eq('subcategory', subcategory)
         if (featured)   query = query.eq('is_featured', true)
         if (flashSale)  query = query.eq('is_flash_sale', true)
@@ -110,7 +120,7 @@ export default function ProductsPage() {
   ].filter(Boolean)
 
   // Find which department the current category belongs to
-  let currentDept = 'Fashion'; // Default
+  let currentDept = department || 'Fashion'; 
   if (category) {
     for (const [dept, groups] of Object.entries(TAXONOMY)) {
       for (const items of Object.values(groups)) {
@@ -129,7 +139,11 @@ export default function ProductsPage() {
       <nav className="flex items-center gap-2 text-sm text-gray-500 mb-6">
         <Link to="/" className="hover:text-primary-600"><Home className="w-4 h-4" /></Link>
         <span>/</span>
-        <span className="font-medium text-gray-900 dark:text-gray-200">{currentDept}</span>
+        {category ? (
+          <Link to={`/products?department=${currentDept}`} className="font-medium text-gray-900 dark:text-gray-200 hover:text-primary-600 transition-colors">{currentDept}</Link>
+        ) : (
+          <span className="font-medium text-gray-900 dark:text-gray-200">{currentDept}</span>
+        )}
         {category && (
           <>
             <span>/</span>

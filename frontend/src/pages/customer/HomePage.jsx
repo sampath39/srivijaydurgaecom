@@ -87,36 +87,10 @@ export default function HomePage() {
   const slide = HERO_SLIDES[currentSlide]
 
   return (
-    <div className="page-container py-8 flex flex-col lg:flex-row gap-8">
-      {/* ── Left Sidebar (Categories) ──────────────────── */}
-      <aside className="hidden lg:block w-64 shrink-0">
-        <div className="sticky top-24 bg-white dark:bg-dark-800 rounded-2xl shadow-sm border border-gray-100 dark:border-dark-700 p-4 pb-2">
-          <h3 className="font-bold text-gray-900 dark:text-white text-xs uppercase tracking-wider mb-4 px-3">BROWSE CATEGORIES</h3>
-          <nav className="space-y-0.5">
-            {SIDEBAR_CATS.map(cat => (
-              <Link 
-                key={cat.slug} 
-                to={`/products?category=${cat.slug}`}
-                className="flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-dark-700 text-gray-700 dark:text-gray-200 transition-colors group"
-              >
-                <div className="flex items-center gap-3 text-sm font-medium">
-                  <span className="text-lg opacity-80">{cat.icon}</span> 
-                  {PRETTY_NAMES[cat.slug] || cat.slug}
-                </div>
-                <ChevronRight className="w-4 h-4 opacity-40 group-hover:opacity-100 group-hover:text-primary-600 transition-all" />
-              </Link>
-            ))}
-          </nav>
-          <div className="mt-4 pt-4 border-t border-gray-100 dark:border-dark-700 pb-2">
-            <Link to="/products" className="w-full btn-outline py-2 text-sm text-primary-600 bg-primary-50 dark:bg-primary-900/10 border-transparent hover:border-primary-200">
-              View All Categories
-            </Link>
-          </div>
-        </div>
-      </aside>
-
+    <div className="page-container py-8">
+      
       {/* ── Main Content Area ─────────────────────────── */}
-      <div className="flex-1 w-full min-w-0 space-y-10">
+      <div className="w-full space-y-10">
         
         {/* ── Hero Banner ───────────────────────────────── */}
         <section className="relative h-[400px] md:h-[450px] rounded-3xl overflow-hidden shadow-sm">

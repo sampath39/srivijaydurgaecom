@@ -118,7 +118,12 @@ export default function Navbar() {
                 <>
                   {Object.keys(TAXONOMY).map(dept => (
                     <div key={dept} className="relative py-4 group">
-                      <Link to={`/products?department=${dept}`} className={`flex items-center gap-1 text-sm font-medium transition-all ${location.search.includes(dept) ? 'text-primary-600 border-b-2 border-primary-500 pb-1' : 'text-gray-700 dark:text-gray-200 hover:text-primary-600 pb-1.5'}`}>
+                      <Link to={`/products?department=${dept}`} 
+                        className={`flex items-center gap-1.5 text-sm font-bold transition-all px-4 py-2 rounded-xl border-2 ${
+                          location.search.includes(dept) 
+                            ? 'border-primary-500 text-primary-700 bg-primary-50 shadow-[0_3px_0_0_#f97316] -translate-y-0.5' 
+                            : 'border-gray-200 dark:border-dark-700 text-gray-700 dark:text-gray-200 hover:border-primary-400 hover:text-primary-600 shadow-[0_3px_0_0_#e5e7eb] dark:shadow-[0_3px_0_0_#374151] hover:shadow-[0_3px_0_0_#fb923c] hover:-translate-y-0.5 bg-white dark:bg-dark-800'
+                        }`}>
                         {dept} <ChevronDown className="w-3 h-3 transition-transform group-hover:rotate-180" />
                       </Link>
                       <div className="absolute top-full left-1/2 -translate-x-1/2 mt-0 w-[600px] bg-white dark:bg-dark-800 rounded-b-2xl shadow-premium border border-gray-100 dark:border-dark-700 p-6 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">

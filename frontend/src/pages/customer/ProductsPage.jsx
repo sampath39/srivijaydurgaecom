@@ -16,15 +16,20 @@ const SORT_OPTIONS = [
 ]
 
 const PILL_COLORS = [
-  { bg: 'bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100', text: 'text-blue-700 dark:text-blue-300', border: 'border-blue-200 dark:border-blue-800', active: 'bg-blue-600 text-white ring-blue-600' },
-  { bg: 'bg-pink-50 dark:bg-pink-900/20 hover:bg-pink-100', text: 'text-pink-700 dark:text-pink-300', border: 'border-pink-200 dark:border-pink-800', active: 'bg-pink-600 text-white ring-pink-600' },
-  { bg: 'bg-green-50 dark:bg-green-900/20 hover:bg-green-100', text: 'text-green-700 dark:text-green-300', border: 'border-green-200 dark:border-green-800', active: 'bg-green-600 text-white ring-green-600' },
-  { bg: 'bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100', text: 'text-purple-700 dark:text-purple-300', border: 'border-purple-200 dark:border-purple-800', active: 'bg-purple-600 text-white ring-purple-600' },
-  { bg: 'bg-orange-50 dark:bg-orange-900/20 hover:bg-orange-100', text: 'text-orange-700 dark:text-orange-300', border: 'border-orange-200 dark:border-orange-800', active: 'bg-orange-600 text-white ring-orange-600' },
-  { bg: 'bg-teal-50 dark:bg-teal-900/20 hover:bg-teal-100', text: 'text-teal-700 dark:text-teal-300', border: 'border-teal-200 dark:border-teal-800', active: 'bg-teal-600 text-white ring-teal-600' },
-  { bg: 'bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100', text: 'text-indigo-700 dark:text-indigo-300', border: 'border-indigo-200 dark:border-indigo-800', active: 'bg-indigo-600 text-white ring-indigo-600' },
-  { bg: 'bg-rose-50 dark:bg-rose-900/20 hover:bg-rose-100', text: 'text-rose-700 dark:text-rose-300', border: 'border-rose-200 dark:border-rose-800', active: 'bg-rose-600 text-white ring-rose-600' },
+  { base: 'bg-gradient-to-b from-blue-400 to-blue-500 border-b-4 border-blue-700 text-white hover:brightness-110 active:border-b-0 active:translate-y-1 active:mb-1', active: 'bg-gradient-to-b from-blue-600 to-blue-800 border-b-0 translate-y-1 mb-1 text-white shadow-inner ring-2 ring-blue-400 ring-offset-1' },
+  { base: 'bg-gradient-to-b from-pink-400 to-pink-500 border-b-4 border-pink-700 text-white hover:brightness-110 active:border-b-0 active:translate-y-1 active:mb-1', active: 'bg-gradient-to-b from-pink-600 to-pink-800 border-b-0 translate-y-1 mb-1 text-white shadow-inner ring-2 ring-pink-400 ring-offset-1' },
+  { base: 'bg-gradient-to-b from-green-400 to-green-500 border-b-4 border-green-700 text-white hover:brightness-110 active:border-b-0 active:translate-y-1 active:mb-1', active: 'bg-gradient-to-b from-green-600 to-green-800 border-b-0 translate-y-1 mb-1 text-white shadow-inner ring-2 ring-green-400 ring-offset-1' },
+  { base: 'bg-gradient-to-b from-purple-400 to-purple-500 border-b-4 border-purple-700 text-white hover:brightness-110 active:border-b-0 active:translate-y-1 active:mb-1', active: 'bg-gradient-to-b from-purple-600 to-purple-800 border-b-0 translate-y-1 mb-1 text-white shadow-inner ring-2 ring-purple-400 ring-offset-1' },
+  { base: 'bg-gradient-to-b from-orange-400 to-orange-500 border-b-4 border-orange-700 text-white hover:brightness-110 active:border-b-0 active:translate-y-1 active:mb-1', active: 'bg-gradient-to-b from-orange-600 to-orange-800 border-b-0 translate-y-1 mb-1 text-white shadow-inner ring-2 ring-orange-400 ring-offset-1' },
+  { base: 'bg-gradient-to-b from-teal-400 to-teal-500 border-b-4 border-teal-700 text-white hover:brightness-110 active:border-b-0 active:translate-y-1 active:mb-1', active: 'bg-gradient-to-b from-teal-600 to-teal-800 border-b-0 translate-y-1 mb-1 text-white shadow-inner ring-2 ring-teal-400 ring-offset-1' },
+  { base: 'bg-gradient-to-b from-indigo-400 to-indigo-500 border-b-4 border-indigo-700 text-white hover:brightness-110 active:border-b-0 active:translate-y-1 active:mb-1', active: 'bg-gradient-to-b from-indigo-600 to-indigo-800 border-b-0 translate-y-1 mb-1 text-white shadow-inner ring-2 ring-indigo-400 ring-offset-1' },
+  { base: 'bg-gradient-to-b from-rose-400 to-rose-500 border-b-4 border-rose-700 text-white hover:brightness-110 active:border-b-0 active:translate-y-1 active:mb-1', active: 'bg-gradient-to-b from-rose-600 to-rose-800 border-b-0 translate-y-1 mb-1 text-white shadow-inner ring-2 ring-rose-400 ring-offset-1' },
 ]
+
+const ALL_PRODUCTS_COLOR = {
+  base: 'bg-gradient-to-b from-gray-600 to-gray-700 border-b-4 border-gray-900 text-white hover:brightness-110 active:border-b-0 active:translate-y-1 active:mb-1',
+  active: 'bg-gradient-to-b from-gray-800 to-black border-b-0 translate-y-1 mb-1 text-white shadow-inner ring-2 ring-gray-400 ring-offset-1'
+}
 
 export default function ProductsPage() {
   const [params, setParams]   = useSearchParams()
@@ -135,10 +140,10 @@ export default function ProductsPage() {
     <div className="page-container py-8">
       {/* Category Top Bar */}
       <div className="w-full overflow-x-auto mb-4 pb-4">
-        <div className="flex gap-4 p-1 min-w-max">
+        <div className="flex gap-4 p-2 min-w-max items-start">
           <button 
             onClick={() => { updateParam('category', ''); updateParam('subcategory', ''); }}
-            className={`px-5 py-2.5 rounded-full whitespace-nowrap text-sm font-semibold transition-all shadow-sm ${!category ? 'bg-primary-600 text-white shadow-primary-500/30' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+            className={`px-5 py-2.5 rounded-2xl whitespace-nowrap text-sm font-bold tracking-wide transition-all select-none ${!category ? ALL_PRODUCTS_COLOR.active : ALL_PRODUCTS_COLOR.base}`}
           >
             All Products
           </button>
@@ -149,11 +154,8 @@ export default function ProductsPage() {
               <button 
                 key={cat.id}
                 onClick={() => { updateParam('category', cat.slug); updateParam('subcategory', ''); }}
-                className={`px-5 py-2.5 rounded-full whitespace-nowrap text-sm font-medium transition-all shadow-sm flex items-center gap-2 border 
-                  ${isActive 
-                    ? `${colorScheme.active} shadow-md ring-2 ring-offset-2 ring-offset-white dark:ring-offset-gray-900 border-transparent` 
-                    : `${colorScheme.bg} ${colorScheme.text} ${colorScheme.border} hover:shadow-md`
-                  }`}
+                className={`px-5 py-2.5 rounded-2xl whitespace-nowrap text-sm font-bold tracking-wide transition-all select-none flex items-center gap-2
+                  ${isActive ? colorScheme.active : colorScheme.base}`}
               >
                 <span>{cat.icon || '🏷️'}</span> {cat.name}
               </button>

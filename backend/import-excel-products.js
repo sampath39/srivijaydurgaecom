@@ -70,6 +70,9 @@ async function run() {
   console.log(`Parsed ${data.length} rows from Excel.`);
 
   const client = new Client({ connectionString: process.env.DATABASE_URL });
+  client.on('error', err => {
+    console.error('Unexpected DB client error:', err.message);
+  });
   await client.connect();
   console.log("Connected to DB.");
 
@@ -98,6 +101,11 @@ async function run() {
       }
     }
 
+    console.log("Fetching existing SKUs to avoid duplicates...");
+    const { rows: existingProducts } = await client.query('SELECT sku FROM public.products WHERE sku IS NOT NULL');
+    const existingSkus = new Set(existingProducts.map(p => p.sku));
+    console.log(`Found ${existingSkus.size} existing SKUs.`);
+
     console.log("Processing products in batches...");
     const batchSize = 100;
     let insertedCount = 0;
@@ -125,6 +133,10 @@ async function run() {
         const desc = `Experience the finest quality with this ${p['Design']} design ${p['Product Name']} from ${p['Brand']}. This belongs to our ${p['Subcategory']} collection and is categorized as a ${p['Quality Tier']} tier product. Available in beautiful colors (${p['Colors']}) to match your style. High quality, durable, and designed for customer satisfaction.`;
 
         const sku = p['Product ID'] || `${p['Main Category'].substring(0,3).toUpperCase()}-${Math.floor(Math.random()*90000)+10000}`;
+        if (existingSkus.has(sku)) {
+          continue; // Skip already inserted
+        }
+
         const stockCount = Math.floor(Math.random() * 11) + 10; // Random between 10-20
         
         const tags = [p['Subcategory'], p['Quality Tier'], p['Design']].filter(Boolean);

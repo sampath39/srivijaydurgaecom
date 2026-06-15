@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Filter, SlidersHorizontal, ChevronDown, X, Search } from 'lucide-react'
+import { SlidersHorizontal, ChevronDown, X } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
+import api from '../../lib/axios'
 import ProductCard from '../../components/ui/ProductCard'
 import SkeletonCard from '../../components/ui/SkeletonCard'
 
@@ -14,32 +15,30 @@ const SORT_OPTIONS = [
   { value: 'rating',     label: 'Top Rated' },
 ]
 
-const CATEGORIES = [
-  { slug: 'sarees', name: 'Sarees' },
-  { slug: 'kadi-fabrics', name: 'Kadi Fabrics' },
-  { slug: 'dress-materials', name: 'Dress Materials' },
-  { slug: 'dupattas', name: 'Dupattas' },
-  { slug: 'kurtas-sets', name: 'Kurtas & Sets' },
-  { slug: 'bedsheets', name: 'Bedsheets' },
-  { slug: 'towels', name: 'Towels' },
-  { slug: 'accessories', name: 'Accessories' },
-]
-
 export default function ProductsPage() {
   const [params, setParams]   = useSearchParams()
   const [products, setProducts] = useState([])
+  const [categories, setCategories] = useState([])
   const [loading, setLoading]   = useState(true)
   const [total, setTotal]       = useState(0)
   const [filterOpen, setFilterOpen] = useState(false)
 
-  const category  = params.get('category') || ''
-  const sort      = params.get('sort')     || 'newest'
-  const featured  = params.get('featured') || ''
-  const flashSale = params.get('flash_sale') || ''
-  const minPrice  = params.get('min_price') || ''
-  const maxPrice  = params.get('max_price') || ''
-  const page      = parseInt(params.get('page') || '1', 10)
+  const category    = params.get('category') || ''
+  const subcategory = params.get('subcategory') || ''
+  const sort        = params.get('sort')     || 'newest'
+  const featured    = params.get('featured') || ''
+  const flashSale   = params.get('flash_sale') || ''
+  const minPrice    = params.get('min_price') || ''
+  const maxPrice    = params.get('max_price') || ''
+  const page        = parseInt(params.get('page') || '1', 10)
   const LIMIT = 20
+
+  useEffect(() => {
+    // Fetch dynamic categories and subcategories
+    api.get('/categories/with-subcategories')
+      .then(res => setCategories(res.data.data || []))
+      .catch(err => console.error("Error fetching categories", err))
+  }, [])
 
   useEffect(() => {
     setLoading(true)
@@ -48,7 +47,7 @@ export default function ProductsPage() {
         const safePage = page > 0 ? page : 1
         const from = (safePage - 1) * LIMIT
 
-        // Resolve category slug → category_id (ensures strict per-category filtering)
+        // Resolve category slug → category_id
         let categoryId = null
         if (category) {
           const { data: catData } = await supabase
@@ -64,6 +63,7 @@ export default function ProductsPage() {
           .eq('is_active', true)
 
         if (categoryId) query = query.eq('category_id', categoryId)
+        if (subcategory) query = query.eq('subcategory', subcategory)
         if (featured)   query = query.eq('is_featured', true)
         if (flashSale)  query = query.eq('is_flash_sale', true)
         if (minPrice)   query = query.gte('price', minPrice)
@@ -105,20 +105,63 @@ export default function ProductsPage() {
   const clearAll = () => setParams({})
 
   const activeFilters = [
-    category  && { key: 'category',   label: category },
     featured  && { key: 'featured',   label: 'Featured' },
     flashSale && { key: 'flash_sale', label: 'Flash Sale' },
     minPrice  && { key: 'min_price',  label: `Min ₹${minPrice}` },
     maxPrice  && { key: 'max_price',  label: `Max ₹${maxPrice}` },
   ].filter(Boolean)
 
+  const selectedCatData = categories.find(c => c.slug === category)
+
   return (
     <div className="page-container py-8">
+      {/* Category Top Bar */}
+      <div className="w-full overflow-x-auto no-scrollbar mb-4 pb-2">
+        <div className="flex gap-4 px-1 min-w-max">
+          <button 
+            onClick={() => { updateParam('category', ''); updateParam('subcategory', ''); }}
+            className={`px-5 py-2.5 rounded-full whitespace-nowrap text-sm font-semibold transition-all shadow-sm ${!category ? 'bg-primary-600 text-white shadow-primary-500/30' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+          >
+            All Products
+          </button>
+          {categories.map(cat => (
+            <button 
+              key={cat.id}
+              onClick={() => { updateParam('category', cat.slug); updateParam('subcategory', ''); }}
+              className={`px-5 py-2.5 rounded-full whitespace-nowrap text-sm font-medium transition-all shadow-sm flex items-center gap-2 ${category === cat.slug ? 'bg-primary-600 text-white shadow-primary-500/30 ring-2 ring-primary-600 ring-offset-2 ring-offset-white dark:ring-offset-gray-900' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-100 dark:border-gray-700'}`}
+            >
+              <span>{cat.icon || '🏷️'}</span> {cat.name}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Subcategory Bar (Only visible if a category is selected and has subcategories) */}
+      {selectedCatData?.subcategories?.length > 0 && (
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }} 
+          animate={{ opacity: 1, y: 0 }} 
+          className="w-full overflow-x-auto no-scrollbar mb-8 pb-2"
+        >
+          <div className="flex gap-3 min-w-max px-1">
+            {selectedCatData.subcategories.map(sub => (
+              <button 
+                key={sub}
+                onClick={() => updateParam('subcategory', subcategory === sub ? '' : sub)}
+                className={`px-4 py-1.5 rounded-full whitespace-nowrap text-xs font-semibold transition-colors border shadow-sm ${subcategory === sub ? 'border-primary-600 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:border-primary-300 dark:hover:border-primary-600'}`}
+              >
+                {sub}
+              </button>
+            ))}
+          </div>
+        </motion.div>
+      )}
+
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 mt-4">
         <div>
           <h1 className="section-title text-2xl md:text-3xl">
-            {flashSale ? '⚡ Flash Sale' : featured ? '⭐ Featured' : category ? CATEGORIES.find(c=>c.slug===category)?.name || 'Products' : 'All Products'}
+            {subcategory ? subcategory : selectedCatData ? selectedCatData.name : flashSale ? '⚡ Flash Sale' : featured ? '⭐ Featured' : 'All Products'}
           </h1>
           <p className="text-gray-400 text-sm mt-1">{total} products found</p>
         </div>
@@ -161,28 +204,12 @@ export default function ProductsPage() {
       )}
 
       <div className="flex gap-6">
-        {/* Sidebar filters */}
+        {/* Sidebar filters (Removed Categories, Kept Price & Type) */}
         <AnimatePresence>
           {filterOpen && (
             <motion.aside initial={{ width: 0, opacity: 0 }} animate={{ width: 240, opacity: 1 }}
               exit={{ width: 0, opacity: 0 }} className="shrink-0 overflow-hidden">
               <div className="w-60 space-y-6">
-                {/* Category filter */}
-                <div>
-                  <h4 className="font-semibold text-gray-900 dark:text-white mb-3">Category</h4>
-                  <div className="space-y-2">
-                    {CATEGORIES.map(cat => (
-                      <label key={cat.slug} className="flex items-center gap-2 cursor-pointer group">
-                        <input type="radio" name="category" value={cat.slug}
-                          checked={category === cat.slug}
-                          onChange={() => updateParam('category', category === cat.slug ? '' : cat.slug)}
-                          className="accent-primary-500" />
-                        <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-600 transition-colors">{cat.name}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
                 {/* Price range */}
                 <div>
                   <h4 className="font-semibold text-gray-900 dark:text-white mb-3">Price Range</h4>
@@ -222,7 +249,7 @@ export default function ProductsPage() {
         <div className="flex-1">
           {loading ? (
             <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {Array(12).fill(0).map((_, i) => <SkeletonCard key={i} />)}
+               {Array(12).fill(0).map((_, i) => <SkeletonCard key={i} />)}
             </div>
           ) : products.length === 0 ? (
             <div className="text-center py-20">

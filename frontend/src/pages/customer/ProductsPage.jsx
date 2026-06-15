@@ -172,10 +172,10 @@ export default function ProductsPage() {
                         <li key={item}>
                           <Link 
                             to={`/products?category=${item}`} 
-                            className={`inline-block py-1 px-1 text-sm transition-all ${
+                            className={`block py-2 px-3 rounded-xl border text-sm transition-all ${
                               isActive 
-                                ? 'text-primary-600 font-bold border-b-2 border-primary-500' 
-                                : 'text-gray-600 dark:text-gray-400 hover:text-primary-600'
+                                ? 'border-primary-500 bg-primary-50/50 text-primary-700 font-bold shadow-sm' 
+                                : 'border-transparent text-gray-600 dark:text-gray-400 hover:border-primary-200 hover:text-primary-600'
                             }`}
                           >
                             {PRETTY_NAMES[item] || item}

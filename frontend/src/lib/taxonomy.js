@@ -18,8 +18,10 @@ export const TAXONOMY = {
   'Body Products': {
     All: ['soap', 'shampoo', 'face-wash', 'creams', 'perfumes', 'deodorants', 'hair-oil', 'body-lotion']
   },
-  'Home Needs': {
-    All: ['towels', 'pillows', 'curtains', 'bedsheets', 'blankets', 'home-decor', 'kitchen', 'bottles']
+  'Towels & Bedding': {
+    Bath: ['towels', 'bottles'],
+    Bedding: ['bedsheets', 'blankets', 'pillows'],
+    Decor: ['curtains', 'home-decor', 'kitchen']
   }
 }
 

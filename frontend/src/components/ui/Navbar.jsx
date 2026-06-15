@@ -109,7 +109,12 @@ export default function Navbar() {
 
             {/* Desktop Navigation Links */}
             <div className="hidden md:flex items-center gap-6">
-              <Link to="/" className="text-gray-700 dark:text-gray-200 hover:text-primary-600 font-medium text-sm transition-colors">
+              <Link to="/" 
+                className={`flex items-center gap-1.5 text-[15px] font-semibold tracking-wide transition-all px-4 py-2 rounded-full ${
+                  location.pathname === '/' 
+                    ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900 shadow-md' 
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-800 hover:text-gray-900 dark:hover:text-white'
+                }`}>
                 Home
               </Link>
               
@@ -119,10 +124,10 @@ export default function Navbar() {
                   {Object.keys(TAXONOMY).map(dept => (
                     <div key={dept} className="relative py-4 group">
                       <Link to={`/products?department=${dept}`} 
-                        className={`flex items-center gap-1.5 text-sm font-bold transition-all px-4 py-2 rounded-xl border-2 ${
+                        className={`flex items-center gap-1.5 text-[15px] font-semibold tracking-wide transition-all px-4 py-2 rounded-full ${
                           location.search.includes(dept) 
-                            ? 'border-primary-500 text-primary-700 bg-primary-50 shadow-[0_3px_0_0_#f97316] -translate-y-0.5' 
-                            : 'border-gray-200 dark:border-dark-700 text-gray-700 dark:text-gray-200 hover:border-primary-400 hover:text-primary-600 shadow-[0_3px_0_0_#e5e7eb] dark:shadow-[0_3px_0_0_#374151] hover:shadow-[0_3px_0_0_#fb923c] hover:-translate-y-0.5 bg-white dark:bg-dark-800'
+                            ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900 shadow-md' 
+                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-800 hover:text-gray-900 dark:hover:text-white'
                         }`}>
                         {dept} <ChevronDown className="w-3 h-3 transition-transform group-hover:rotate-180" />
                       </Link>
@@ -149,9 +154,10 @@ export default function Navbar() {
                 </>
               ) : (
                 /* Simple Dropdown - On Homepage */
-                <div className="relative py-2" onMouseEnter={() => setCatMenuOpen(true)} onMouseLeave={() => setCatMenuOpen(false)}>
-                  <button className="flex items-center gap-1 text-gray-700 dark:text-gray-200 hover:text-primary-600 font-medium text-sm transition-colors">
-                    Categories <ChevronDown className="w-4 h-4" />
+                <div className="relative py-2 group">
+                  <button className="flex items-center gap-1.5 text-[15px] font-semibold tracking-wide transition-all px-4 py-2 rounded-full text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-800 hover:text-gray-900 dark:hover:text-white"
+                          onMouseEnter={() => setCatMenuOpen(true)} onMouseLeave={() => setCatMenuOpen(false)}>
+                    Categories <ChevronDown className="w-4 h-4 transition-transform group-hover:rotate-180" />
                   </button>
                   <AnimatePresence>
                     {catMenuOpen && (

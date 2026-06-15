@@ -12,6 +12,7 @@ import { clearAuth } from '../../store/slices/authSlice'
 import { toggleDarkMode } from '../../store/slices/uiSlice'
 import { toggleCart } from '../../store/slices/cartSlice'
 import { selectCartCount } from '../../store/slices/cartSlice'
+import { selectWishlistItems } from '../../store/slices/wishlistSlice'
 import toast from 'react-hot-toast'
 
 import { TAXONOMY } from '../../lib/taxonomy'

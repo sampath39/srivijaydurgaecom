@@ -12,10 +12,18 @@ import { clearAuth } from '../../store/slices/authSlice'
 import { toggleDarkMode } from '../../store/slices/uiSlice'
 import { toggleCart } from '../../store/slices/cartSlice'
 import { selectCartCount } from '../../store/slices/cartSlice'
-import { selectWishlistItems } from '../../store/slices/wishlistSlice'
 import toast from 'react-hot-toast'
 
 import { TAXONOMY } from '../../lib/taxonomy'
+
+const CATEGORIES = [
+  { name: 'Sarees', slug: 'sarees', icon: '🥻' },
+  { name: 'Kadi Fabrics', slug: 'kadi-fabrics', icon: '🧵' },
+  { name: 'Dress Materials', slug: 'dress-materials', icon: '👗' },
+  { name: 'Dupattas', slug: 'dupattas', icon: '🧣' },
+  { name: 'Kurtas & Sets', slug: 'kurtas-sets', icon: '👔' },
+  { name: 'Bedsheets', slug: 'bedsheets', icon: '🛏️' },
+]
 
 export default function Navbar() {
   const dispatch    = useDispatch()
@@ -98,36 +106,71 @@ export default function Navbar() {
               </div>
             </Link>
 
-            {/* Mega Menu Links — desktop */}
+            {/* Desktop Navigation Links */}
             <div className="hidden md:flex items-center gap-6">
               <Link to="/" className="text-gray-700 dark:text-gray-200 hover:text-primary-600 font-medium text-sm transition-colors">
                 Home
               </Link>
-              {Object.keys(TAXONOMY).map(dept => (
-                <div key={dept} className="relative py-4 group">
-                  <button className="flex items-center gap-1 text-gray-700 dark:text-gray-200 hover:text-primary-600 font-medium text-sm transition-colors">
-                    {dept} <ChevronDown className="w-3 h-3 transition-transform group-hover:rotate-180" />
-                  </button>
-                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-0 w-[600px] bg-white dark:bg-dark-800 rounded-b-2xl shadow-premium border border-gray-100 dark:border-dark-700 p-6 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                    <div className="flex gap-8">
-                      {Object.entries(TAXONOMY[dept]).map(([groupName, items]) => (
-                        <div key={groupName} className="flex-1">
-                          {groupName !== 'All' && <h3 className="font-bold text-gray-900 dark:text-white mb-3 text-sm uppercase tracking-wider">{groupName}</h3>}
-                          <ul className="space-y-2">
-                            {items.map(item => (
-                              <li key={item}>
-                                <Link to={`/products?category=${item}`} className="text-gray-500 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400 text-sm transition-colors capitalize block py-1">
-                                  {item.replace(/-/g, ' ')}
-                                </Link>
-                              </li>
-                            ))}
-                          </ul>
+              
+              {location.pathname.startsWith('/products') ? (
+                /* Mega Menu - Only on Products Page */
+                <>
+                  {Object.keys(TAXONOMY).map(dept => (
+                    <div key={dept} className="relative py-4 group">
+                      <button className="flex items-center gap-1 text-gray-700 dark:text-gray-200 hover:text-primary-600 font-medium text-sm transition-colors">
+                        {dept} <ChevronDown className="w-3 h-3 transition-transform group-hover:rotate-180" />
+                      </button>
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 mt-0 w-[600px] bg-white dark:bg-dark-800 rounded-b-2xl shadow-premium border border-gray-100 dark:border-dark-700 p-6 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                        <div className="flex gap-8">
+                          {Object.entries(TAXONOMY[dept]).map(([groupName, items]) => (
+                            <div key={groupName} className="flex-1">
+                              {groupName !== 'All' && <h3 className="font-bold text-gray-900 dark:text-white mb-3 text-sm uppercase tracking-wider">{groupName}</h3>}
+                              <ul className="space-y-2">
+                                {items.map(item => (
+                                  <li key={item}>
+                                    <Link to={`/products?category=${item}`} className="text-gray-500 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400 text-sm transition-colors capitalize block py-1">
+                                      {item.replace(/-/g, ' ')}
+                                    </Link>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          ))}
                         </div>
-                      ))}
+                      </div>
                     </div>
-                  </div>
+                  ))}
+                </>
+              ) : (
+                /* Simple Dropdown - On Homepage */
+                <div className="relative py-2" onMouseEnter={() => setCatMenuOpen(true)} onMouseLeave={() => setCatMenuOpen(false)}>
+                  <button className="flex items-center gap-1 text-gray-700 dark:text-gray-200 hover:text-primary-600 font-medium text-sm transition-colors">
+                    Categories <ChevronDown className="w-4 h-4" />
+                  </button>
+                  <AnimatePresence>
+                    {catMenuOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }}
+                        className="absolute top-full left-0 mt-0.5 w-64 bg-white dark:bg-dark-800 rounded-2xl shadow-premium border border-gray-100 dark:border-dark-700 p-3 grid grid-cols-2 gap-1 z-50"
+                      >
+                        {CATEGORIES.map(cat => (
+                          <Link key={cat.slug} to={`/products?category=${cat.slug}`}
+                            onClick={() => setCatMenuOpen(false)}
+                            className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-primary-50 dark:hover:bg-primary-900/20 text-gray-700 dark:text-gray-200 hover:text-primary-600 transition-colors text-sm"
+                          >
+                            <span>{cat.icon}</span>{cat.name}
+                          </Link>
+                        ))}
+                        <Link to="/products" onClick={() => setCatMenuOpen(false)}
+                          className="col-span-2 text-center py-2 text-primary-600 font-medium text-sm hover:underline"
+                        >
+                          View All Products →
+                        </Link>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
-              ))}
+              )}
             </div>
 
             {/* Search bar — desktop */}
@@ -298,20 +341,31 @@ export default function Navbar() {
                 >
                   <span>{darkMode ? '☀️' : '🌙'}</span> {darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
                 </button>
-                {Object.keys(TAXONOMY).map(dept => (
-                  <div key={dept} className="py-2">
-                    <div className="px-4 py-2 font-semibold text-gray-900 dark:text-white text-sm bg-gray-100 dark:bg-dark-800 rounded-lg">{dept}</div>
-                    <div className="pl-6 pr-4 mt-2 grid grid-cols-2 gap-2">
-                      {Object.values(TAXONOMY[dept]).flat().map(item => (
-                        <Link key={item} to={`/products?category=${item}`} onClick={() => setMobileOpen(false)}
-                          className="text-gray-600 dark:text-gray-400 hover:text-primary-600 text-sm py-1 capitalize"
-                        >
-                          {item.replace(/-/g, ' ')}
-                        </Link>
-                      ))}
+                {location.pathname.startsWith('/products') ? (
+                  Object.keys(TAXONOMY).map(dept => (
+                    <div key={dept} className="py-2">
+                      <div className="px-4 py-2 font-semibold text-gray-900 dark:text-white text-sm bg-gray-100 dark:bg-dark-800 rounded-lg">{dept}</div>
+                      <div className="pl-6 pr-4 mt-2 grid grid-cols-2 gap-2">
+                        {Object.values(TAXONOMY[dept]).flat().map(item => (
+                          <Link key={item} to={`/products?category=${item}`} onClick={() => setMobileOpen(false)}
+                            className="text-gray-600 dark:text-gray-400 hover:text-primary-600 text-sm py-1 capitalize"
+                          >
+                            {item.replace(/-/g, ' ')}
+                          </Link>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  CATEGORIES.map(cat => (
+                    <Link key={cat.slug} to={`/products?category=${cat.slug}`}
+                      onClick={() => setMobileOpen(false)}
+                      className="flex items-center gap-3 px-4 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-dark-700 text-gray-700 dark:text-gray-200 text-sm"
+                    >
+                      <span>{cat.icon}</span>{cat.name}
+                    </Link>
+                  ))
+                )}
                 {!user && (
                   <div className="flex gap-2 pt-2">
                     <Link to="/login" onClick={() => setMobileOpen(false)} className="btn-outline flex-1 py-2 text-sm">Login</Link>

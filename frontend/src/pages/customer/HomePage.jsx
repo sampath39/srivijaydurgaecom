@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ArrowRight, Zap, Star, Gift, Users, ShoppingBag, Truck, Shield, MapPin, Phone } from 'lucide-react'
+import { ArrowRight, Zap, Star, Gift, Users, ShoppingBag, Truck, Shield, MapPin, Phone, ChevronRight } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import ProductCard from '../../components/ui/ProductCard'
 import FlashSaleTimer from '../../components/ui/FlashSaleTimer'
 import SkeletonCard from '../../components/ui/SkeletonCard'
 import { useSelector } from 'react-redux'
+import { CATEGORY_COLORS, PRETTY_NAMES, FALLBACK_COLOR } from '../../lib/taxonomy'
 
 const HERO_SLIDES = [
   {
@@ -27,33 +28,32 @@ const HERO_SLIDES = [
     bg: 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=1400&q=80',
     badge: '✨ New Arrivals',
   },
-  {
-    title: 'Flash Sale Live!\nUp to 40% Off',
-    subtitle: 'Limited time offers on premium Kadi fabrics.',
-    cta: 'Grab Deals',
-    link: '/products?flash_sale=true',
-    gradient: 'from-accent-900/90 via-orange-900/80 to-dark-900/90',
-    bg: 'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=1400&q=80',
-    badge: '⚡ Flash Sale',
-  },
-]
-
-const CATEGORIES = [
-  { name: 'Sarees', slug: 'sarees', icon: '🥻', color: 'from-pink-400 to-rose-600', count: '200+ styles' },
-  { name: 'Kadi Fabrics', slug: 'kadi-fabrics', icon: '🧵', color: 'from-amber-400 to-orange-600', count: '150+ types' },
-  { name: 'Dress Materials', slug: 'dress-materials', icon: '👗', color: 'from-purple-400 to-indigo-600', count: '300+ sets' },
-  { name: 'Dupattas', slug: 'dupattas', icon: '🧣', color: 'from-teal-400 to-cyan-600', count: '100+ designs' },
-  { name: 'Kurtas & Sets', slug: 'kurtas-sets', icon: '👔', color: 'from-blue-400 to-blue-600', count: '80+ styles' },
-  { name: 'Bedsheets', slug: 'bedsheets', icon: '🛏️', color: 'from-green-400 to-emerald-600', count: '60+ sets' },
-  { name: 'Towels', slug: 'towels', icon: '🧺', color: 'from-yellow-400 to-amber-600', count: '40+ types' },
-  { name: 'Accessories', slug: 'accessories', icon: '👜', color: 'from-red-400 to-pink-600', count: '50+ items' },
 ]
 
 const FEATURES = [
-  { icon: Truck,    title: 'Free Shipping', desc: 'On orders above ₹999', color: 'text-blue-500' },
-  { icon: Shield,   title: '100% Authentic', desc: 'Genuine kadi products', color: 'text-green-500' },
-  { icon: Star,     title: 'Quality Assured', desc: '25+ years of trust', color: 'text-primary-500' },
-  { icon: Gift,     title: 'Rewards & Offers', desc: 'Earn points on purchase', color: 'text-purple-500' },
+  { icon: Truck,    title: 'Free Delivery', desc: 'On orders above ₹499' },
+  { icon: Shield,   title: 'Quality Assured', desc: '100% Original Products' },
+  { icon: ShoppingBag, title: 'Easy Returns', desc: 'Within 7 Days' },
+  { icon: Phone,     title: 'Customer Support', desc: '24/7 Support' },
+]
+
+const SIDEBAR_CATS = [
+  { slug: 'towels', icon: '🧻' },
+  { slug: 'pillows', icon: '🛏️' },
+  { slug: 'shirts', icon: '👔' },
+  { slug: 'pants', icon: '👖' },
+  { slug: 't-shirts', icon: '👕' },
+  { slug: 'jeans', icon: '👖' },
+  { slug: 'sarees', icon: '🥻' },
+  { slug: 'kurtas', icon: '👘' },
+  { slug: 'bedsheets', icon: '🛏️' },
+  { slug: 'blankets', icon: '🛌' },
+  { slug: 'curtains', icon: '🏡' },
+  { slug: 'home-decor', icon: '🏺' },
+  { slug: 'kitchen', icon: '🍳' },
+  { slug: 'ayurvedic', icon: '🌿' },
+  { slug: 'innerwear', icon: '🩲' },
+  { slug: 'bottles', icon: '💧' },
 ]
 
 export default function HomePage() {
@@ -61,8 +61,6 @@ export default function HomePage() {
   const [featuredProducts, setFeatured]   = useState([])
   const [flashProducts, setFlash]         = useState([])
   const [loadingFeatured, setLF]          = useState(true)
-  const [loadingFlash, setLFlash]         = useState(true)
-  const profile = useSelector(s => s.auth.profile)
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentSlide(s => (s + 1) % HERO_SLIDES.length), 5000)
@@ -83,300 +81,131 @@ export default function HomePage() {
       .then(({ data, error }) => {
         if (error) console.error("Supabase error flash sale products:", error)
         setFlash(data || [])
-        setLFlash(false)
       })
   }, [])
 
   const slide = HERO_SLIDES[currentSlide]
 
   return (
-    <div className="min-h-screen">
-
-      {/* ── Hero Banner with Shop Details ─────────────────────── */}
-      <section className="relative h-[70vh] min-h-[500px] overflow-hidden">
-        {HERO_SLIDES.map((s, i) => (
-          <motion.div key={i}
-            initial={false}
-            animate={{ opacity: i === currentSlide ? 1 : 0 }}
-            transition={{ duration: 0.8 }}
-            className="absolute inset-0"
-          >
-            <img src={s.bg} alt="" className="w-full h-full object-cover" />
-            <div className={`absolute inset-0 bg-gradient-to-r ${s.gradient}`} />
-          </motion.div>
-        ))}
-
-        <div className="relative z-10 h-full flex items-center">
-          <div className="page-container w-full">
-            <div className="grid lg:grid-cols-2 gap-8 items-center">
-              {/* Left: Shop Details */}
-              <motion.div
-                initial={{ opacity: 0, x: -40 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.7 }}
-                className="space-y-4"
+    <div className="page-container py-8 flex flex-col lg:flex-row gap-8">
+      {/* ── Left Sidebar (Categories) ──────────────────── */}
+      <aside className="hidden lg:block w-64 shrink-0">
+        <div className="sticky top-24 bg-white dark:bg-dark-800 rounded-2xl shadow-sm border border-gray-100 dark:border-dark-700 p-4 pb-2">
+          <h3 className="font-bold text-gray-900 dark:text-white text-xs uppercase tracking-wider mb-4 px-3">BROWSE CATEGORIES</h3>
+          <nav className="space-y-0.5">
+            {SIDEBAR_CATS.map(cat => (
+              <Link 
+                key={cat.slug} 
+                to={`/products?category=${cat.slug}`}
+                className="flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-dark-700 text-gray-700 dark:text-gray-200 transition-colors group"
               >
-                <div className="divine-badge">Est. 1999 · Guntur, Andhra Pradesh</div>
-
-                <div className="shop-name-3d">
-                  <h1 className="shop-name-line1">Sri Vijaya Durga</h1>
-                  <h2 className="shop-name-line2">Kadhi Emporium</h2>
-                  <p className="shop-name-telugu">శ్రీ విజయ దుర్గా ఖాదీ ఎంపోరియం</p>
-                  <div className="shop-name-underline" />
+                <div className="flex items-center gap-3 text-sm font-medium">
+                  <span className="text-lg opacity-80">{cat.icon}</span> 
+                  {PRETTY_NAMES[cat.slug] || cat.slug}
                 </div>
-
-                <p className="shop-tagline">
-                  Authentic Handloom Sarees · కాది వస్త్రాలు
-                </p>
-
-                <div className="shop-rating">
-                  {[1,2,3,4,5].map(n => <Star key={n} className="star-icon" fill="currentColor" />)}
-                  <span>4.9 · 10,000+ Customers</span>
-                </div>
-
-                <div className="shop-info-pills">
-                  <a href="tel:9493447776" className="info-pill">
-                    <Phone className="w-3 h-3" /> 9493447776
-                  </a>
-                  <a href="https://maps.google.com/?q=Arundelpet,Guntur" target="_blank" rel="noreferrer" className="info-pill">
-                    <MapPin className="w-3 h-3" /> Arundelpet, Guntur
-                  </a>
-                  <span className="info-pill highlight">25+ Years of Trust</span>
-                </div>
-
-                <div className="shop-cta-row">
-                  <Link to="/products" className="shop-cta-primary">🛍️ Shop Now</Link>
-                  <Link to="/products?category=sarees" className="shop-cta-secondary">🥻 View Sarees</Link>
-                </div>
-              </motion.div>
-
-              {/* Right: Slide Content */}
-              <motion.div
-                key={currentSlide}
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.2 }}
-                className="max-w-xl"
-              >
-                <motion.span initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}
-                  className="inline-block badge-gold mb-4 text-sm px-4 py-1.5">
-                  {slide.badge}
-                </motion.span>
-                <h1 className="font-display text-4xl md:text-5xl font-bold text-white leading-tight whitespace-pre-line mb-4 text-shadow">
-                  {slide.title}
-                </h1>
-                <p className="text-white/80 text-lg mb-6 max-w-lg">{slide.subtitle}</p>
-                <div className="flex flex-wrap gap-4">
-                  <Link to={slide.link} className="btn-primary text-lg px-8 py-4 shadow-gold-lg">
-                    {slide.cta} <ArrowRight className="w-5 h-5" />
-                  </Link>
-                  <Link to="/products" className="flex items-center gap-2 px-8 py-4 bg-white/10 border border-white/30 text-white font-semibold rounded-xl hover:bg-white/20 transition-all backdrop-blur-sm">
-                    View All
-                  </Link>
-                </div>
-              </motion.div>
-            </div>
-          </div>
-        </div>
-
-        {/* Slide indicators */}
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-10">
-          {HERO_SLIDES.map((_, i) => (
-            <button key={i} onClick={() => setCurrentSlide(i)}
-              className={`h-1.5 rounded-full transition-all duration-300 ${i === currentSlide ? 'w-8 bg-primary-400' : 'w-2 bg-white/40'}`} />
-          ))}
-        </div>
-
-        {/* Floating stats */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
-          className="absolute bottom-8 right-8 hidden lg:flex flex-col gap-2">
-          {[['10K+', 'Happy Customers'], ['500+', 'Products'], ['25+', 'Years of Trust']].map(([num, label]) => (
-            <div key={label} className="glass px-4 py-2 rounded-xl text-right">
-              <p className="font-bold text-primary-400 text-lg">{num}</p>
-              <p className="text-white/70 text-xs">{label}</p>
-            </div>
-          ))}
-        </motion.div>
-      </section>
-
-      {/* ── Features strip ──────────────────────────────── */}
-      <section className="bg-white dark:bg-dark-800 border-b border-gray-100 dark:border-dark-700">
-        <div className="page-container">
-          <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-gray-100 dark:divide-dark-700">
-            {FEATURES.map((f, i) => (
-              <motion.div key={f.title} initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1 }} viewport={{ once: true }}
-                className="flex items-center gap-3 px-4 py-5 hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors">
-                <div className={`w-10 h-10 rounded-xl bg-gray-100 dark:bg-dark-600 flex items-center justify-center ${f.color}`}>
-                  <f.icon className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="font-semibold text-gray-900 dark:text-white text-sm">{f.title}</p>
-                  <p className="text-gray-400 text-xs">{f.desc}</p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Categories ──────────────────────────────────── */}
-      <section className="py-16">
-        <div className="page-container">
-          <div className="text-center mb-10">
-            <motion.h2 initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-              className="section-title">Shop by Category</motion.h2>
-            <div className="gold-divider mx-auto mt-3" />
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
-            {CATEGORIES.map((cat, i) => (
-              <motion.div key={cat.slug}
-                initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }}
-                transition={{ delay: i * 0.05 }} viewport={{ once: true }}
-                whileHover={{ y: -4, scale: 1.02 }}
-              >
-                <Link to={`/products?category=${cat.slug}`}
-                  className="block text-center group">
-                  <div className={`w-full aspect-square bg-gradient-to-br ${cat.color} rounded-2xl flex items-center justify-center text-4xl mb-2 shadow-md group-hover:shadow-lg transition-all duration-300`}>
-                    {cat.icon}
-                  </div>
-                  <p className="font-semibold text-gray-900 dark:text-white text-sm leading-tight">{cat.name}</p>
-                  <p className="text-gray-400 text-xs mt-0.5">{cat.count}</p>
-                </Link>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Flash Sale ──────────────────────────────────── */}
-      {flashProducts.length > 0 && (
-        <section className="py-12 bg-gradient-to-r from-accent-900/20 via-primary-900/10 to-dark-900/20 dark:from-accent-900/30">
-          <div className="page-container">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
-              <div>
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-8 h-8 bg-accent-500 rounded-lg flex items-center justify-center animate-pulse">
-                    <Zap className="w-4 h-4 text-white" />
-                  </div>
-                  <h2 className="section-title text-2xl md:text-3xl">⚡ Flash Sale</h2>
-                </div>
-                <p className="text-gray-500 dark:text-gray-400">Hurry! Limited time offers</p>
-              </div>
-              <FlashSaleTimer endTime={new Date(Date.now() + 6 * 60 * 60 * 1000)} />
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {flashProducts.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
-            </div>
-            <div className="text-center mt-6">
-              <Link to="/products?flash_sale=true" className="btn-outline">
-                View All Flash Deals <ArrowRight className="w-4 h-4" />
+                <ChevronRight className="w-4 h-4 opacity-40 group-hover:opacity-100 group-hover:text-primary-600 transition-all" />
               </Link>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ── Featured Products ────────────────────────────── */}
-      <section className="py-16">
-        <div className="page-container">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-10">
-            <div>
-              <h2 className="section-title">Trending Products</h2>
-              <div className="gold-divider mt-3" />
-            </div>
-            <Link to="/products?featured=true" className="btn-outline text-sm">
-              View All <ArrowRight className="w-4 h-4" />
+            ))}
+          </nav>
+          <div className="mt-4 pt-4 border-t border-gray-100 dark:border-dark-700 pb-2">
+            <Link to="/products" className="w-full btn-outline py-2 text-sm text-primary-600 bg-primary-50 dark:bg-primary-900/10 border-transparent hover:border-primary-200">
+              View All Categories
             </Link>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-            {loadingFeatured
-              ? Array(8).fill(0).map((_, i) => <SkeletonCard key={i} />)
-              : featuredProducts.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)
-            }
+        </div>
+      </aside>
+
+      {/* ── Main Content Area ─────────────────────────── */}
+      <div className="flex-1 w-full min-w-0 space-y-10">
+        
+        {/* ── Hero Banner ───────────────────────────────── */}
+        <section className="relative h-[400px] md:h-[450px] rounded-3xl overflow-hidden shadow-sm">
+          {HERO_SLIDES.map((s, i) => (
+            <motion.div key={i}
+              initial={false}
+              animate={{ opacity: i === currentSlide ? 1 : 0 }}
+              transition={{ duration: 0.8 }}
+              className="absolute inset-0"
+            >
+              <img src={s.bg} alt="" className="w-full h-full object-cover" />
+              <div className={`absolute inset-0 bg-gradient-to-r ${s.gradient}`} />
+            </motion.div>
+          ))}
+
+          <div className="relative z-10 h-full flex flex-col justify-center p-8 md:p-12">
+            <motion.div
+              key={currentSlide}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="max-w-xl"
+            >
+              <span className="inline-block badge-gold mb-4 text-sm px-4 py-1.5">
+                {slide.badge}
+              </span>
+              <h1 className="font-display text-4xl md:text-5xl font-bold text-white leading-tight whitespace-pre-line mb-4 text-shadow">
+                {slide.title}
+              </h1>
+              <p className="text-white/90 text-lg mb-8 max-w-lg">{slide.subtitle}</p>
+              <Link to={slide.link} className="btn-primary text-lg px-8 py-3.5 shadow-gold-lg">
+                {slide.cta} <ArrowRight className="w-5 h-5" />
+              </Link>
+            </motion.div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* ── Referral Banner ─────────────────────────────── */}
-      <section className="py-12">
-        <div className="page-container">
-          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-            className="relative overflow-hidden bg-gradient-to-r from-secondary-900 via-secondary-800 to-primary-900 rounded-3xl p-8 md:p-12">
-            <div className="absolute inset-0 opacity-10"
-              style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '32px 32px' }} />
-            <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
-              <div>
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-12 h-12 bg-primary-500 rounded-2xl flex items-center justify-center">
-                    <Users className="w-6 h-6 text-white" />
+        {/* ── Shop by Category (Screenshot Layout) ──────── */}
+        <section>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Shop by Category</h2>
+            <Link to="/products" className="text-sm font-semibold text-primary-600 hover:text-primary-700">View All Categories</Link>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+            {SIDEBAR_CATS.map((cat, i) => {
+              const bgColor = CATEGORY_COLORS[cat.slug] || FALLBACK_COLOR;
+              return (
+                <Link key={cat.slug} to={`/products?category=${cat.slug}`} className="group block">
+                  <div className={`w-full aspect-[4/3] rounded-2xl ${bgColor} flex flex-col items-center justify-center p-4 transition-transform group-hover:scale-[1.02] shadow-sm`}>
+                    <span className="text-4xl mb-3 drop-shadow-md transition-transform group-hover:-translate-y-1">{cat.icon}</span>
+                    <span className="text-sm font-semibold text-gray-800 text-center">{PRETTY_NAMES[cat.slug] || cat.slug}</span>
                   </div>
-                  <span className="badge-gold px-3 py-1">Referral Program</span>
+                </Link>
+              )
+            })}
+          </div>
+        </section>
+
+        {/* ── Features strip ────────────────────────────── */}
+        <section className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 p-2 shadow-sm">
+          <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-gray-100 dark:divide-dark-700">
+            {FEATURES.map((f, i) => (
+              <div key={f.title} className="flex flex-col items-center justify-center gap-2 px-4 py-6 text-center hover:bg-gray-50 dark:hover:bg-dark-700/50 transition-colors first:rounded-l-xl last:rounded-r-xl">
+                <f.icon className="w-6 h-6 text-gray-400 dark:text-gray-500 mb-1" />
+                <div>
+                  <p className="font-bold text-gray-900 dark:text-white text-sm">{f.title}</p>
+                  <p className="text-gray-500 text-xs mt-0.5">{f.desc}</p>
                 </div>
-                <h3 className="font-display text-3xl font-bold text-white mb-2">Invite & Earn ₹50!</h3>
-                <p className="text-white/70 text-base max-w-lg">
-                  Share your referral code with friends. When they join and shop, you earn <strong className="text-primary-400">100 reward points</strong> and they get <strong className="text-primary-400">50 bonus points</strong>!
-                </p>
               </div>
-              <div className="shrink-0">
-                <Link to={profile ? '/referral' : '/signup'} className="btn-primary text-lg px-8 py-4 shadow-gold-lg">
-                  <Gift className="w-5 h-5" />
-                  {profile ? 'My Referral Code' : 'Join & Earn'}
-                </Link>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ── Rewards Banner ──────────────────────────────── */}
-      <section className="py-12 bg-gray-50 dark:bg-dark-800">
-        <div className="page-container">
-          <div className="grid md:grid-cols-3 gap-6">
-            {[
-              { icon: '🏆', title: 'Earn Points', desc: '₹100 purchase = 10 reward points', link: '/rewards', color: 'from-primary-500 to-amber-600' },
-            ].map((card, i) => (
-              <motion.div key={card.title}
-                initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1 }} viewport={{ once: true }}
-                whileHover={{ y: -4 }}
-              >
-                <Link to={card.link}
-                  className={`block bg-gradient-to-br ${card.color} rounded-2xl p-6 text-white shadow-lg hover:shadow-xl transition-all`}>
-                  <div className="text-4xl mb-3">{card.icon}</div>
-                  <h3 className="font-bold text-xl mb-1">{card.title}</h3>
-                  <p className="text-white/80 text-sm">{card.desc}</p>
-                  <div className="mt-4 flex items-center gap-2 text-sm font-semibold">
-                    Learn more <ArrowRight className="w-4 h-4" />
-                  </div>
-                </Link>
-              </motion.div>
             ))}
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* ── Shop Info ────────────────────────────────────── */}
-      <section className="py-16">
-        <div className="page-container text-center">
-          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-            <h2 className="section-title mb-4">Visit Our Store</h2>
-            <div className="gold-divider mx-auto mb-6" />
-            <p className="text-gray-500 dark:text-gray-400 text-lg mb-8 max-w-xl mx-auto">
-              Experience the finest kadi textiles in person at our flagship store in Guntur.
-            </p>
-            <div className="inline-flex flex-col sm:flex-row gap-4 items-center">
-              <a href="tel:9493447776" className="btn-primary px-8 py-3">
-                📞 Call 9493447776
-              </a>
-              <a href="https://maps.google.com/?q=Arundelpet,Guntur" target="_blank" rel="noreferrer"
-                className="btn-outline px-8 py-3">
-                📍 Arundelpet 4/1, Guntur
-              </a>
-            </div>
-          </motion.div>
-        </div>
-      </section>
+        {/* ── Best Selling Products ─────────────────────── */}
+        <section>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Best Selling Products</h2>
+            <Link to="/products?sort=popular" className="text-sm font-semibold text-primary-600 hover:text-primary-700">View All</Link>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            {loadingFeatured
+              ? Array(5).fill(0).map((_, i) => <SkeletonCard key={i} />)
+              : featuredProducts.slice(0, 5).map((p, i) => <ProductCard key={p.id} product={p} index={i} />)
+            }
+          </div>
+        </section>
+        
+        <div className="pb-12" />
+      </div>
     </div>
   )
 }

@@ -34,10 +34,15 @@ export default function ProductsPage() {
   const LIMIT = 20
 
   useEffect(() => {
-    // Fetch dynamic categories and subcategories
-    api.get('/categories/with-subcategories')
-      .then(res => setCategories(res.data.data || []))
-      .catch(err => console.error("Error fetching categories", err))
+    // Fetch dynamic categories and subcategories using Supabase RPC to bypass Render deployment latency
+    supabase.rpc('get_categories_with_subcategories')
+      .then(({ data, error }) => {
+        if (error) {
+          console.error("Error fetching categories via RPC", error);
+        } else {
+          setCategories(data || []);
+        }
+      });
   }, [])
 
   useEffect(() => {

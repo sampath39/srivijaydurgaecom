@@ -112,8 +112,8 @@ export default function Navbar() {
               <Link to="/" 
                 className={`flex items-center gap-1.5 text-[15px] font-semibold tracking-wide transition-all px-4 py-2 rounded-full ${
                   location.pathname === '/' 
-                    ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900 shadow-md' 
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-800 hover:text-gray-900 dark:hover:text-white'
+                    ? 'bg-primary-500 text-white shadow-md shadow-primary-500/20' 
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-800 hover:text-primary-600'
                 }`}>
                 Home
               </Link>
@@ -126,8 +126,8 @@ export default function Navbar() {
                       <Link to={`/products?department=${dept}`} 
                         className={`flex items-center gap-1.5 text-[15px] font-semibold tracking-wide transition-all px-4 py-2 rounded-full ${
                           location.search.includes(dept) 
-                            ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900 shadow-md' 
-                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-800 hover:text-gray-900 dark:hover:text-white'
+                            ? 'bg-primary-500 text-white shadow-md shadow-primary-500/20' 
+                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-800 hover:text-primary-600'
                         }`}>
                         {dept} <ChevronDown className="w-3 h-3 transition-transform group-hover:rotate-180" />
                       </Link>

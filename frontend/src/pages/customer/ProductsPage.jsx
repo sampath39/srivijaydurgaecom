@@ -12,6 +12,9 @@ const SORT_OPTIONS = [
   { value: 'popular',    label: 'Most Popular' },
   { value: 'price_asc',  label: 'Price: Low to High' },
   { value: 'price_desc', label: 'Price: High to Low' },
+  { value: 'rating',     label: 'Top Rated' },
+]
+
 export default function ProductsPage() {
   const [params, setParams]   = useSearchParams()
   const [products, setProducts] = useState([])

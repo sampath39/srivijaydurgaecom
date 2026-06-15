@@ -101,10 +101,12 @@ export default function ProductsPage() {
   }, [params])
 
   const updateParam = (key, val) => {
-    const next = new URLSearchParams(params)
-    if (val) next.set(key, val); else next.delete(key)
-    if (key !== 'page') next.delete('page')
-    setParams(next)
+    setParams(prev => {
+      const next = new URLSearchParams(prev)
+      if (val) next.set(key, val); else next.delete(key)
+      if (key !== 'page') next.delete('page')
+      return next
+    })
   }
 
   const clearAll = () => setParams({})

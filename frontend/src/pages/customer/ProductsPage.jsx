@@ -12,25 +12,6 @@ const SORT_OPTIONS = [
   { value: 'popular',    label: 'Most Popular' },
   { value: 'price_asc',  label: 'Price: Low to High' },
   { value: 'price_desc', label: 'Price: High to Low' },
-  { value: 'rating',     label: 'Top Rated' },
-]
-
-const PILL_COLORS = [
-  { base: 'bg-gradient-to-b from-blue-400 to-blue-500 border-b-4 border-blue-700 text-white hover:brightness-110 active:border-b-0 active:translate-y-1 active:mb-1', active: 'bg-gradient-to-b from-blue-600 to-blue-800 border-b-0 translate-y-1 mb-1 text-white shadow-inner ring-2 ring-blue-400 ring-offset-1' },
-  { base: 'bg-gradient-to-b from-pink-400 to-pink-500 border-b-4 border-pink-700 text-white hover:brightness-110 active:border-b-0 active:translate-y-1 active:mb-1', active: 'bg-gradient-to-b from-pink-600 to-pink-800 border-b-0 translate-y-1 mb-1 text-white shadow-inner ring-2 ring-pink-400 ring-offset-1' },
-  { base: 'bg-gradient-to-b from-green-400 to-green-500 border-b-4 border-green-700 text-white hover:brightness-110 active:border-b-0 active:translate-y-1 active:mb-1', active: 'bg-gradient-to-b from-green-600 to-green-800 border-b-0 translate-y-1 mb-1 text-white shadow-inner ring-2 ring-green-400 ring-offset-1' },
-  { base: 'bg-gradient-to-b from-purple-400 to-purple-500 border-b-4 border-purple-700 text-white hover:brightness-110 active:border-b-0 active:translate-y-1 active:mb-1', active: 'bg-gradient-to-b from-purple-600 to-purple-800 border-b-0 translate-y-1 mb-1 text-white shadow-inner ring-2 ring-purple-400 ring-offset-1' },
-  { base: 'bg-gradient-to-b from-orange-400 to-orange-500 border-b-4 border-orange-700 text-white hover:brightness-110 active:border-b-0 active:translate-y-1 active:mb-1', active: 'bg-gradient-to-b from-orange-600 to-orange-800 border-b-0 translate-y-1 mb-1 text-white shadow-inner ring-2 ring-orange-400 ring-offset-1' },
-  { base: 'bg-gradient-to-b from-teal-400 to-teal-500 border-b-4 border-teal-700 text-white hover:brightness-110 active:border-b-0 active:translate-y-1 active:mb-1', active: 'bg-gradient-to-b from-teal-600 to-teal-800 border-b-0 translate-y-1 mb-1 text-white shadow-inner ring-2 ring-teal-400 ring-offset-1' },
-  { base: 'bg-gradient-to-b from-indigo-400 to-indigo-500 border-b-4 border-indigo-700 text-white hover:brightness-110 active:border-b-0 active:translate-y-1 active:mb-1', active: 'bg-gradient-to-b from-indigo-600 to-indigo-800 border-b-0 translate-y-1 mb-1 text-white shadow-inner ring-2 ring-indigo-400 ring-offset-1' },
-  { base: 'bg-gradient-to-b from-rose-400 to-rose-500 border-b-4 border-rose-700 text-white hover:brightness-110 active:border-b-0 active:translate-y-1 active:mb-1', active: 'bg-gradient-to-b from-rose-600 to-rose-800 border-b-0 translate-y-1 mb-1 text-white shadow-inner ring-2 ring-rose-400 ring-offset-1' },
-]
-
-const ALL_PRODUCTS_COLOR = {
-  base: 'bg-gradient-to-b from-gray-600 to-gray-700 border-b-4 border-gray-900 text-white hover:brightness-110 active:border-b-0 active:translate-y-1 active:mb-1',
-  active: 'bg-gradient-to-b from-gray-800 to-black border-b-0 translate-y-1 mb-1 text-white shadow-inner ring-2 ring-gray-400 ring-offset-1'
-}
-
 export default function ProductsPage() {
   const [params, setParams]   = useSearchParams()
   const [products, setProducts] = useState([])
@@ -116,13 +97,17 @@ export default function ProductsPage() {
     fetchData()
   }, [params])
 
-  const updateParam = (key, val) => {
-    setParams(prev => {
-      const next = new URLSearchParams(prev)
-      if (val) next.set(key, val); else next.delete(key)
+  const updateParams = (updates) => {
+    const next = new URLSearchParams(params)
+    for (const [key, val] of Object.entries(updates)) {
+      if (val !== null && val !== undefined && val !== '') {
+        next.set(key, val)
+      } else {
+        next.delete(key)
+      }
       if (key !== 'page') next.delete('page')
-      return next
-    })
+    }
+    setParams(next)
   }
 
   const clearAll = () => setParams({})
@@ -140,22 +125,24 @@ export default function ProductsPage() {
     <div className="page-container py-8">
       {/* Category Top Bar */}
       <div className="w-full overflow-x-auto mb-4 pb-4">
-        <div className="flex gap-4 p-2 min-w-max items-start">
+        <div className="flex gap-4 p-1 min-w-max">
           <button 
-            onClick={() => { updateParam('category', ''); updateParam('subcategory', ''); }}
-            className={`px-5 py-2.5 rounded-2xl whitespace-nowrap text-sm font-bold tracking-wide transition-all select-none ${!category ? ALL_PRODUCTS_COLOR.active : ALL_PRODUCTS_COLOR.base}`}
+            onClick={() => updateParams({ category: '', subcategory: '' })}
+            className={`px-5 py-2.5 rounded-full whitespace-nowrap text-sm font-semibold transition-all shadow-sm ${!category ? 'bg-primary-600 text-white shadow-primary-500/30' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-100 dark:border-gray-700'}`}
           >
             All Products
           </button>
-          {categories.map((cat, i) => {
-            const colorScheme = PILL_COLORS[i % PILL_COLORS.length];
+          {categories.map((cat) => {
             const isActive = category === cat.slug;
             return (
               <button 
                 key={cat.id}
-                onClick={() => { updateParam('category', cat.slug); updateParam('subcategory', ''); }}
-                className={`px-5 py-2.5 rounded-2xl whitespace-nowrap text-sm font-bold tracking-wide transition-all select-none flex items-center gap-2
-                  ${isActive ? colorScheme.active : colorScheme.base}`}
+                onClick={() => updateParams({ category: cat.slug, subcategory: '' })}
+                className={`px-5 py-2.5 rounded-full whitespace-nowrap text-sm font-medium transition-all shadow-sm flex items-center gap-2 border 
+                  ${isActive 
+                    ? 'bg-primary-600 text-white shadow-primary-500/30 ring-2 ring-primary-600 ring-offset-2 ring-offset-white dark:ring-offset-gray-900 border-transparent' 
+                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 border-gray-100 dark:border-gray-700 hover:shadow-md'
+                  }`}
               >
                 <span>{cat.icon || '🏷️'}</span> {cat.name}
               </button>
@@ -175,7 +162,7 @@ export default function ProductsPage() {
             {selectedCatData.subcategories.map(sub => (
               <button 
                 key={sub}
-                onClick={() => updateParam('subcategory', subcategory === sub ? '' : sub)}
+                onClick={() => updateParams({ subcategory: subcategory === sub ? '' : sub })}
                 className={`px-4 py-1.5 rounded-full whitespace-nowrap text-xs font-semibold transition-colors border shadow-sm ${subcategory === sub ? 'border-primary-600 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:border-primary-300 dark:hover:border-primary-600'}`}
               >
                 {sub}
@@ -196,7 +183,7 @@ export default function ProductsPage() {
         <div className="flex items-center gap-3">
           {/* Sort */}
           <div className="relative">
-            <select value={sort} onChange={e => updateParam('sort', e.target.value)}
+            <select value={sort} onChange={e => updateParams({ sort: e.target.value })}
               className="input py-2 pr-8 text-sm appearance-none cursor-pointer min-w-[160px]">
               {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
@@ -219,7 +206,7 @@ export default function ProductsPage() {
       {activeFilters.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-4">
           {activeFilters.map(f => (
-            <button key={f.key} onClick={() => updateParam(f.key, '')}
+            <button key={f.key} onClick={() => updateParams({ [f.key]: '' })}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-full text-sm hover:bg-primary-200 transition-colors">
               {f.label} <X className="w-3 h-3" />
             </button>
@@ -243,10 +230,10 @@ export default function ProductsPage() {
                   <h4 className="font-semibold text-gray-900 dark:text-white mb-3">Price Range</h4>
                   <div className="flex gap-2">
                     <input type="number" placeholder="Min" value={minPrice}
-                      onChange={e => updateParam('min_price', e.target.value)}
+                      onChange={e => updateParams({ min_price: e.target.value })}
                       className="input py-2 text-sm" />
                     <input type="number" placeholder="Max" value={maxPrice}
-                      onChange={e => updateParam('max_price', e.target.value)}
+                      onChange={e => updateParams({ max_price: e.target.value })}
                       className="input py-2 text-sm" />
                   </div>
                 </div>
@@ -261,7 +248,7 @@ export default function ProductsPage() {
                     ].map(f => (
                       <label key={f.key} className="flex items-center gap-2 cursor-pointer">
                         <input type="checkbox" checked={params.get(f.key) === f.val}
-                          onChange={e => updateParam(f.key, e.target.checked ? f.val : '')}
+                          onChange={e => updateParams({ [f.key]: e.target.checked ? f.val : '' })}
                           className="accent-primary-500" />
                         <span className="text-sm text-gray-700 dark:text-gray-300">{f.label}</span>
                       </label>
@@ -294,10 +281,10 @@ export default function ProductsPage() {
               {/* Pagination */}
               {total > LIMIT && (
                 <div className="flex items-center justify-center gap-3 mt-10">
-                  <button disabled={page === 1} onClick={() => updateParam('page', page - 1)}
+                  <button disabled={page === 1} onClick={() => updateParams({ page: page - 1 })}
                     className="btn-outline py-2 px-4 text-sm disabled:opacity-40">← Prev</button>
                   <span className="text-gray-500 text-sm">Page {page} of {Math.ceil(total/LIMIT)}</span>
-                  <button disabled={page >= Math.ceil(total/LIMIT)} onClick={() => updateParam('page', page + 1)}
+                  <button disabled={page >= Math.ceil(total/LIMIT)} onClick={() => updateParams({ page: page + 1 })}
                     className="btn-outline py-2 px-4 text-sm disabled:opacity-40">Next →</button>
                 </div>
               )}

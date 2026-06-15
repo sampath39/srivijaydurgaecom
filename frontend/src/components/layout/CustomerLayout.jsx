@@ -11,8 +11,6 @@ export default function CustomerLayout() {
   const location = useLocation()
   const navigate = useNavigate()
 
-  const navigate = useNavigate()
-
   return (
     <div className={darkMode ? 'dark' : ''}>
       <div className="min-h-screen bg-cream-50 dark:bg-dark-900 transition-colors duration-300">

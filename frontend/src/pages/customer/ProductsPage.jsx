@@ -15,6 +15,17 @@ const SORT_OPTIONS = [
   { value: 'rating',     label: 'Top Rated' },
 ]
 
+const PILL_COLORS = [
+  { bg: 'bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100', text: 'text-blue-700 dark:text-blue-300', border: 'border-blue-200 dark:border-blue-800', active: 'bg-blue-600 text-white ring-blue-600' },
+  { bg: 'bg-pink-50 dark:bg-pink-900/20 hover:bg-pink-100', text: 'text-pink-700 dark:text-pink-300', border: 'border-pink-200 dark:border-pink-800', active: 'bg-pink-600 text-white ring-pink-600' },
+  { bg: 'bg-green-50 dark:bg-green-900/20 hover:bg-green-100', text: 'text-green-700 dark:text-green-300', border: 'border-green-200 dark:border-green-800', active: 'bg-green-600 text-white ring-green-600' },
+  { bg: 'bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100', text: 'text-purple-700 dark:text-purple-300', border: 'border-purple-200 dark:border-purple-800', active: 'bg-purple-600 text-white ring-purple-600' },
+  { bg: 'bg-orange-50 dark:bg-orange-900/20 hover:bg-orange-100', text: 'text-orange-700 dark:text-orange-300', border: 'border-orange-200 dark:border-orange-800', active: 'bg-orange-600 text-white ring-orange-600' },
+  { bg: 'bg-teal-50 dark:bg-teal-900/20 hover:bg-teal-100', text: 'text-teal-700 dark:text-teal-300', border: 'border-teal-200 dark:border-teal-800', active: 'bg-teal-600 text-white ring-teal-600' },
+  { bg: 'bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100', text: 'text-indigo-700 dark:text-indigo-300', border: 'border-indigo-200 dark:border-indigo-800', active: 'bg-indigo-600 text-white ring-indigo-600' },
+  { bg: 'bg-rose-50 dark:bg-rose-900/20 hover:bg-rose-100', text: 'text-rose-700 dark:text-rose-300', border: 'border-rose-200 dark:border-rose-800', active: 'bg-rose-600 text-white ring-rose-600' },
+]
+
 export default function ProductsPage() {
   const [params, setParams]   = useSearchParams()
   const [products, setProducts] = useState([])
@@ -123,23 +134,31 @@ export default function ProductsPage() {
   return (
     <div className="page-container py-8">
       {/* Category Top Bar */}
-      <div className="w-full overflow-x-auto no-scrollbar mb-4 pb-2">
-        <div className="flex gap-4 px-1 min-w-max">
+      <div className="w-full overflow-x-auto mb-4 pb-4">
+        <div className="flex gap-4 p-1 min-w-max">
           <button 
             onClick={() => { updateParam('category', ''); updateParam('subcategory', ''); }}
             className={`px-5 py-2.5 rounded-full whitespace-nowrap text-sm font-semibold transition-all shadow-sm ${!category ? 'bg-primary-600 text-white shadow-primary-500/30' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
           >
             All Products
           </button>
-          {categories.map(cat => (
-            <button 
-              key={cat.id}
-              onClick={() => { updateParam('category', cat.slug); updateParam('subcategory', ''); }}
-              className={`px-5 py-2.5 rounded-full whitespace-nowrap text-sm font-medium transition-all shadow-sm flex items-center gap-2 ${category === cat.slug ? 'bg-primary-600 text-white shadow-primary-500/30 ring-2 ring-primary-600 ring-offset-2 ring-offset-white dark:ring-offset-gray-900' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-100 dark:border-gray-700'}`}
-            >
-              <span>{cat.icon || '🏷️'}</span> {cat.name}
-            </button>
-          ))}
+          {categories.map((cat, i) => {
+            const colorScheme = PILL_COLORS[i % PILL_COLORS.length];
+            const isActive = category === cat.slug;
+            return (
+              <button 
+                key={cat.id}
+                onClick={() => { updateParam('category', cat.slug); updateParam('subcategory', ''); }}
+                className={`px-5 py-2.5 rounded-full whitespace-nowrap text-sm font-medium transition-all shadow-sm flex items-center gap-2 border 
+                  ${isActive 
+                    ? `${colorScheme.active} shadow-md ring-2 ring-offset-2 ring-offset-white dark:ring-offset-gray-900 border-transparent` 
+                    : `${colorScheme.bg} ${colorScheme.text} ${colorScheme.border} hover:shadow-md`
+                  }`}
+              >
+                <span>{cat.icon || '🏷️'}</span> {cat.name}
+              </button>
+            )
+          })}
         </div>
       </div>
 
@@ -148,9 +167,9 @@ export default function ProductsPage() {
         <motion.div 
           initial={{ opacity: 0, y: -10 }} 
           animate={{ opacity: 1, y: 0 }} 
-          className="w-full overflow-x-auto no-scrollbar mb-8 pb-2"
+          className="w-full overflow-x-auto mb-8 pb-4"
         >
-          <div className="flex gap-3 min-w-max px-1">
+          <div className="flex gap-3 min-w-max p-1">
             {selectedCatData.subcategories.map(sub => (
               <button 
                 key={sub}

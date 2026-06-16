@@ -46,11 +46,22 @@ export default function Navbar() {
   const [notifications, setNotifications] = useState([])
   const [notifOpen, setNotifOpen]       = useState(false)
   const searchRef = useRef(null)
+  const catMenuRef = useRef(null)
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20)
     window.addEventListener('scroll', onScroll)
     return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (catMenuRef.current && !catMenuRef.current.contains(event.target)) {
+        setCatMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
   useEffect(() => {
@@ -121,9 +132,9 @@ export default function Navbar() {
               </Link>
               
               {/* Unified Categories Mega Menu (Clickable) */}
-              <div className="relative py-2">
+              <div className="relative py-2" ref={catMenuRef}>
                 <button onClick={() => setCatMenuOpen(!catMenuOpen)}
-                        className="flex items-center gap-1.5 text-[15px] font-semibold tracking-wide transition-all px-4 py-2 rounded-full text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-800 hover:text-gray-900 dark:hover:text-white outline-none focus:outline-none"
+                        className={`flex items-center gap-1.5 text-[15px] font-semibold tracking-wide transition-all px-4 py-2 rounded-full text-gray-700 dark:text-gray-300 outline-none focus:outline-none ${catMenuOpen ? 'bg-gray-100 dark:bg-dark-800 text-gray-900 dark:text-white' : ''}`}
                 >
                   Categories <ChevronDown className={`w-4 h-4 transition-transform ${catMenuOpen ? 'rotate-180' : ''}`} />
                 </button>

@@ -156,10 +156,11 @@ export default function Navbar() {
                 </>
               ) : (
                 /* Simple Dropdown - On Homepage */
-                <div className="relative py-2 group">
-                  <button className="flex items-center gap-1.5 text-[15px] font-semibold tracking-wide transition-all px-4 py-2 rounded-full text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-800 hover:text-gray-900 dark:hover:text-white"
-                          onMouseEnter={() => setCatMenuOpen(true)} onMouseLeave={() => setCatMenuOpen(false)}>
-                    Categories <ChevronDown className="w-4 h-4 transition-transform group-hover:rotate-180" />
+                <div className="relative py-2">
+                  <button onClick={() => setCatMenuOpen(!catMenuOpen)}
+                          className="flex items-center gap-1.5 text-[15px] font-semibold tracking-wide transition-all px-4 py-2 rounded-full text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-800 hover:text-gray-900 dark:hover:text-white"
+                  >
+                    Categories <ChevronDown className={`w-4 h-4 transition-transform ${catMenuOpen ? 'rotate-180' : ''}`} />
                   </button>
                   <AnimatePresence>
                     {catMenuOpen && (

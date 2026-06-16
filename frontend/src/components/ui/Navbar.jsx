@@ -158,7 +158,7 @@ export default function Navbar() {
                 /* Simple Dropdown - On Homepage */
                 <div className="relative py-2">
                   <button onClick={() => setCatMenuOpen(!catMenuOpen)}
-                          className="flex items-center gap-1.5 text-[15px] font-semibold tracking-wide transition-all px-4 py-2 rounded-full text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-800 hover:text-gray-900 dark:hover:text-white"
+                          className="flex items-center gap-1.5 text-[15px] font-semibold tracking-wide transition-all px-4 py-2 rounded-full text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-800 hover:text-gray-900 dark:hover:text-white outline-none focus:outline-none"
                   >
                     Categories <ChevronDown className={`w-4 h-4 transition-transform ${catMenuOpen ? 'rotate-180' : ''}`} />
                   </button>

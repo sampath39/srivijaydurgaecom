@@ -99,9 +99,11 @@ export default function AdminDashboard() {
     const byDay = {}
     data.revenueData.forEach(o => {
       const day = new Date(o.created_at).toLocaleDateString('en-IN', { month:'short', day:'numeric' })
-      byDay[day] = (byDay[day] || 0) + Number(o.total_amount)
+      if (!byDay[day]) byDay[day] = { revenue: 0, orders: 0 }
+      byDay[day].revenue += Number(o.total_amount)
+      byDay[day].orders += 1
     })
-    return Object.entries(byDay).slice(-14).map(([date, revenue]) => ({ date, revenue: Math.round(revenue) }))
+    return Object.entries(byDay).slice(-14).map(([date, vals]) => ({ date, revenue: Math.round(vals.revenue), orders: vals.orders }))
   })()
 
   const STATS = data ? [
@@ -219,23 +221,71 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Revenue chart */}
+      {/* Advanced Analytics Charts */}
       {chartData.length > 0 && (
-        <div className="card p-6">
-          <h2 className="font-bold text-gray-900 dark:text-white mb-5 flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-primary-500" /> Revenue (Last 14 Days)
-          </h2>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="date" tick={{ fontSize:11 }} />
-              <YAxis tick={{ fontSize:11 }} tickFormatter={v => `₹${v.toLocaleString('en-IN')}`} />
-              <Tooltip formatter={v => [`₹${v.toLocaleString('en-IN')}`, 'Revenue']} />
-              <Bar dataKey="revenue" fill="#F59E0B" radius={[6,6,0,0]} />
-            </BarChart>
-          </ResponsiveContainer>
+        <div className="grid lg:grid-cols-2 gap-6">
+          <div className="card p-6">
+            <h2 className="font-bold text-gray-900 dark:text-white mb-5 flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-primary-500" /> Revenue Trend (14 Days)
+            </h2>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" dark:stroke="#374151" />
+                <XAxis dataKey="date" tick={{ fontSize:11 }} />
+                <YAxis tick={{ fontSize:11 }} tickFormatter={v => `₹${v.toLocaleString('en-IN')}`} />
+                <Tooltip formatter={v => [`₹${v.toLocaleString('en-IN')}`, 'Revenue']} cursor={{fill: 'rgba(245, 158, 11, 0.1)'}} />
+                <Bar dataKey="revenue" fill="#F59E0B" radius={[6,6,0,0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          
+          <div className="card p-6">
+            <h2 className="font-bold text-gray-900 dark:text-white mb-5 flex items-center gap-2">
+              <ShoppingBag className="w-5 h-5 text-blue-500" /> Order Volume (14 Days)
+            </h2>
+            <ResponsiveContainer width="100%" height={220}>
+              <LineChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" dark:stroke="#374151" />
+                <XAxis dataKey="date" tick={{ fontSize:11 }} />
+                <YAxis tick={{ fontSize:11 }} />
+                <Tooltip formatter={v => [v, 'Orders']} />
+                <Line type="monotone" dataKey="orders" stroke="#3B82F6" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       )}
+
+      {/* Inventory Forecasting Alerts */}
+      <div className="card p-6 border-red-500/30 bg-red-50 dark:bg-red-900/10">
+        <h2 className="font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+          <Package className="w-5 h-5 text-red-500 animate-pulse" /> Inventory Forecasting Alerts
+        </h2>
+        <div className="space-y-3">
+          {(data?.topProducts || []).filter(p => p.stock_count <= 10).length === 0 ? (
+            <p className="text-sm text-gray-600 dark:text-gray-400">All top-selling products have healthy inventory levels.</p>
+          ) : (
+            (data?.topProducts || []).filter(p => p.stock_count <= 10).map(p => (
+              <div key={p.id} className="flex items-center justify-between bg-white dark:bg-dark-800 p-3 rounded-lg border border-red-100 dark:border-red-900/30 shadow-sm">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0">
+                    <img src={p.images?.[0]} alt="" className="w-full h-full object-cover" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-sm text-gray-900 dark:text-white truncate max-w-xs">{p.name}</p>
+                    <p className="text-xs text-red-600 font-medium">Critical Stock: Only {p.stock_count} units left!</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-gray-500">Sales Velocity</p>
+                  <p className="font-bold text-sm text-gray-900 dark:text-white">{p.sold_count} sold recently</p>
+                  <p className="text-xs text-red-500 mt-0.5">Est. out of stock in {(p.stock_count / Math.max(1, p.sold_count / 14)).toFixed(0)} days</p>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Recent Orders */}

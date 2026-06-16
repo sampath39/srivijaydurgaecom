@@ -7,6 +7,8 @@ import ProductCard from '../../components/ui/ProductCard'
 import FlashSaleTimer from '../../components/ui/FlashSaleTimer'
 import SkeletonCard from '../../components/ui/SkeletonCard'
 import { useSelector } from 'react-redux'
+import { selectCartCount } from '../../store/slices/cartSlice'
+import { useTranslation } from 'react-i18next'
 
 const HERO_SLIDES = [
   {
@@ -57,10 +59,12 @@ const FEATURES = [
 ]
 
 export default function HomePage() {
+  const { t } = useTranslation()
   const [currentSlide, setCurrentSlide]   = useState(0)
-  const [featuredProducts, setFeatured]   = useState([])
-  const [flashProducts, setFlash]         = useState([])
-  const [loadingFeatured, setLF]          = useState(true)
+  const [featured, setFeatured]           = useState([])
+  const [flashSale, setFlashSale]         = useState([])
+  const [loading, setLoading]             = useState(true)
+  const cartCount = useSelector(selectCartCount)
   const [loadingFlash, setLFlash]         = useState(true)
   const profile = useSelector(s => s.auth.profile)
 
@@ -162,13 +166,15 @@ export default function HomePage() {
                   className="inline-block badge-gold mb-4 text-sm px-4 py-1.5">
                   {slide.badge}
                 </motion.span>
-                <h1 className="font-display text-4xl md:text-5xl font-bold text-white leading-tight whitespace-pre-line mb-4 text-shadow">
-                  {slide.title}
+                <h1 className="font-display text-5xl md:text-7xl font-bold mb-6 leading-tight whitespace-pre-line text-white">
+                  {currentSlide === 0 ? t('home.hero_title') : slide.title}
                 </h1>
-                <p className="text-white/80 text-lg mb-6 max-w-lg">{slide.subtitle}</p>
+                <p className="text-xl md:text-2xl mb-8 text-white/90 max-w-2xl">
+                  {currentSlide === 0 ? t('home.hero_subtitle') : slide.subtitle}
+                </p>
                 <div className="flex flex-wrap gap-4">
-                  <Link to={slide.link} className="btn-primary text-lg px-8 py-4 shadow-gold-lg">
-                    {slide.cta} <ArrowRight className="w-5 h-5" />
+                  <Link to={slide.link} className="btn-primary py-4 px-10 text-lg inline-flex items-center gap-2 group/btn shadow-gold-lg">
+                    {currentSlide === 0 ? t('home.shop_now') : slide.cta} <ArrowRight className="w-5 h-5 group-hover/btn:translate-x-1 transition-transform" />
                   </Link>
                   <Link to="/products" className="flex items-center gap-2 px-8 py-4 bg-white/10 border border-white/30 text-white font-semibold rounded-xl hover:bg-white/20 transition-all backdrop-blur-sm">
                     View All
@@ -223,9 +229,10 @@ export default function HomePage() {
       {/* ── Categories ──────────────────────────────────── */}
       <section className="py-16">
         <div className="page-container">
-          <div className="text-center mb-10">
+          <div className="text-center mb-12">
             <motion.h2 initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-              className="section-title">Shop by Category</motion.h2>
+              className="section-title">{t('home.categories')}</motion.h2>
+            <p className="text-gray-500 mt-2">{t('home.categories_subtitle')}</p>
             <div className="gold-divider mx-auto mt-3" />
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
@@ -356,11 +363,42 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ── Shop The Look (UGC) ────────────────────────── */}
+      <section className="py-16 bg-gray-50 dark:bg-dark-800">
+        <div className="page-container">
+          <div className="flex items-end justify-between mb-10">
+            <div>
+              <h2 className="section-title">Shop The Look</h2>
+              <p className="text-gray-500 mt-2">Real style from our real customers. Tag us to be featured!</p>
+            </div>
+            <Link to="/products" className="hidden sm:flex text-primary-600 font-semibold items-center gap-2 hover:gap-3 transition-all">
+              View Gallery <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+              { id: 1, img: 'https://images.unsplash.com/photo-1583391733959-f18306028453?w=500&q=80', user: '@priya_style', link: '/products' },
+              { id: 2, img: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=500&q=80', user: '@kavya.s', link: '/products' },
+              { id: 3, img: 'https://images.unsplash.com/photo-1550614000-4b95dd247545?w=500&q=80', user: '@the_ethnic_girl', link: '/products' },
+              { id: 4, img: 'https://images.unsplash.com/photo-1589465885855-4472b71ab4ca?w=500&q=80', user: '@saree.love', link: '/products' },
+            ].map((post, i) => (
+              <motion.div key={post.id} initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.1 }} viewport={{ once: true }} className="relative group rounded-2xl overflow-hidden aspect-[4/5] cursor-pointer">
+                <img src={post.img} alt="UGC" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-5">
+                  <p className="text-white font-semibold mb-2">{post.user}</p>
+                  <Link to={post.link} className="btn-primary text-xs py-2 w-max shadow-md">Shop This Look</Link>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── Shop Info ────────────────────────────────────── */}
       <section className="py-16">
         <div className="page-container text-center">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-            <h2 className="section-title mb-4">Visit Our Store</h2>
+            <h2 className="section-title mb-4">{t('home.visit_store')}</h2>
             <div className="gold-divider mx-auto mb-6" />
             <p className="text-gray-500 dark:text-gray-400 text-lg mb-8 max-w-xl mx-auto">
               Experience the finest kadi textiles in person at our flagship store in Guntur.
@@ -377,6 +415,30 @@ export default function HomePage() {
           </motion.div>
         </div>
       </section>
+
+
+      {/* Abandoned Cart Recovery Banner */}
+      <AnimatePresence>
+        {cartCount > 0 && (
+          <motion.div 
+            initial={{ opacity: 0, y: 100 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            exit={{ opacity: 0, y: 100 }}
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-white dark:bg-dark-800 shadow-2xl shadow-primary-500/20 border-2 border-primary-500 rounded-2xl p-4 md:p-5 w-[90%] max-w-lg flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left"
+          >
+            <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center shrink-0">
+              <ShoppingBag className="w-6 h-6 text-primary-600 animate-bounce" />
+            </div>
+            <div className="flex-1">
+              <p className="font-bold text-gray-900 dark:text-white text-sm sm:text-base">You left items in your cart!</p>
+              <p className="text-xs sm:text-sm text-gray-500 mt-1">Use code <span className="font-bold text-primary-600 bg-primary-50 dark:bg-primary-900/20 px-1.5 py-0.5 rounded">RECOVER5</span> at checkout for 5% off.</p>
+            </div>
+            <Link to="/cart" className="btn-primary py-2.5 px-6 whitespace-nowrap shadow-md text-sm">
+              View Cart
+            </Link>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

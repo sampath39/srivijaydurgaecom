@@ -63,25 +63,60 @@ export default function OrderDetailPage() {
                 <div className="absolute left-4 top-0 w-0.5 bg-primary-500 transition-all duration-1000"
                   style={{ height: stepIdx >= 0 ? `${(stepIdx / (STATUS_STEPS.length - 1)) * 100}%` : '0%' }} />
                 <div className="space-y-6">
-                  {STATUS_STEPS.map((step, i) => (
+                  {STATUS_STEPS.map((step, i) => {
+                    // Generate mock timestamps for past steps based on order created_at
+                    const orderDate = new Date(order.created_at);
+                    orderDate.setHours(orderDate.getHours() + (i * 12)); // mock progression
+                    const timeStr = orderDate.toLocaleDateString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                    return (
                     <motion.div key={step.key}
                       initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }}
                       className={`relative pl-12 ${i <= stepIdx ? 'opacity-100' : 'opacity-40'}`}>
                       <div className={`absolute left-0 top-0 w-9 h-9 rounded-full flex items-center justify-center text-lg border-2 z-10 ${
-                        i <= stepIdx ? 'bg-primary-500 border-primary-500 text-white' : 'bg-white dark:bg-dark-800 border-gray-300 dark:border-dark-600'
+                        i <= stepIdx ? 'bg-primary-500 border-primary-500 text-white shadow-md shadow-primary-500/30' : 'bg-white dark:bg-dark-800 border-gray-300 dark:border-dark-600'
                       }`}>
                         {i < stepIdx ? '✓' : step.icon}
                       </div>
                       <div>
                         <p className={`font-semibold text-sm ${i <= stepIdx ? 'text-gray-900 dark:text-white' : 'text-gray-400'}`}>{step.label}</p>
-                        {i === stepIdx && (
-                          <p className="text-xs text-primary-600 mt-0.5">Current status</p>
+                        {i <= stepIdx ? (
+                          <p className="text-xs text-gray-500 font-mono mt-0.5">{timeStr}</p>
+                        ) : (
+                          <p className="text-xs text-gray-400 mt-0.5">Pending...</p>
+                        )}
+                        {i === stepIdx && i === 3 && (
+                          <p className="text-xs text-primary-600 mt-1 font-bold animate-pulse">🚚 Arriving soon!</p>
                         )}
                       </div>
                     </motion.div>
-                  ))}
+                  )})}
                 </div>
               </div>
+
+              {stepIdx >= 3 && (
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-8 pt-6 border-t border-gray-100 dark:border-dark-700">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-semibold text-gray-900 dark:text-white text-sm flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" /> Live Tracking
+                    </h3>
+                    <span className="text-xs font-mono text-gray-500">AWB: {order.id.slice(0, 8).toUpperCase()}</span>
+                  </div>
+                  <div className="w-full h-48 rounded-xl overflow-hidden bg-gray-100 relative">
+                    <img src="https://images.unsplash.com/photo-1524661135-423995f22d0b?w=800&q=80" alt="Map" className="w-full h-full object-cover opacity-70" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-white/80 dark:from-dark-800/80 to-transparent flex items-end p-4">
+                      <div className="bg-white dark:bg-dark-800 p-3 rounded-lg shadow-md flex items-center gap-3 w-full border border-gray-100 dark:border-dark-600">
+                        <div className="w-10 h-10 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center">
+                          <Truck className="w-5 h-5 text-primary-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-gray-900 dark:text-white">Out for Delivery</p>
+                          <p className="text-xs text-gray-500">Your package is near {addr?.city || 'your city'}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
             </div>
           )}
 

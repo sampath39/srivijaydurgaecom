@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Heart, ShoppingCart, Star, Truck, Shield, RefreshCcw, Share2, ChevronLeft, ChevronRight, Zap, Plus, Minus, X } from 'lucide-react'
+import { Heart, ShoppingCart, Star, Truck, Shield, RefreshCcw, Share2, ChevronLeft, ChevronRight, Zap, Plus, Minus, X, Camera, Upload } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import api from '../../lib/axios'
 import { useDispatch, useSelector } from 'react-redux'
@@ -23,9 +23,12 @@ export default function ProductDetailPage() {
   const [quantity, setQty]        = useState(1)
   const [selectedSize, setSize]   = useState(null)
   const [related, setRelated]     = useState([])
+  const [fbt, setFbt]             = useState([])
   const [reviewText, setReview]   = useState('')
   const [rating, setRating]       = useState(0)
   const [submitting, setSubmit]   = useState(false)
+  const [reviewImages, setReviewImages] = useState([])
+  const [uploadingImg, setUploadingImg] = useState(false)
   const [isLightboxOpen, setIsLightboxOpen] = useState(false)
   const [zoomScale, setZoomScale] = useState(1)
 
@@ -83,6 +86,12 @@ export default function ProductDetailPage() {
             .eq('category_id', data.category_id).eq('is_active', true)
             .neq('id', data.id).limit(4)
             .then(({ data: rel }) => setRelated(rel || []))
+            
+          // Mock frequently bought together by fetching from a different category or just random
+          supabase.from('products').select('*')
+            .eq('is_active', true)
+            .neq('id', data.id).limit(2)
+            .then(({ data: f }) => setFbt(f || []))
         }
       })
   }, [slug])
@@ -127,17 +136,48 @@ export default function ProductDetailPage() {
     toast(isWished ? 'Removed from wishlist' : 'Added to wishlist ❤️')
   }
 
+  const handleImageUpload = async (e) => {
+    const files = Array.from(e.target.files).slice(0, 3 - reviewImages.length)
+    if (!files.length) return
+    setUploadingImg(true)
+    try {
+      const urls = await Promise.all(files.map(async (file) => {
+        const ext = file.name.split('.').pop()
+        const path = `reviews/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+        const { error } = await supabase.storage.from('product-images').upload(path, file)
+        if (error) throw error
+        return supabase.storage.from('product-images').getPublicUrl(path).data.publicUrl
+      }))
+      setReviewImages(prev => [...prev, ...urls])
+      toast.success('Photos attached!')
+    } catch (err) {
+      toast.error('Image upload failed: ' + err.message)
+    }
+    setUploadingImg(false)
+  }
+
   const submitReview = async () => {
     if (!user) { toast.error('Login to submit a review'); return }
     if (rating === 0) { toast.error('Please select a rating star first'); return }
     setSubmit(true)
-    const { error } = await supabase.from('reviews')
-      .upsert({ user_id: user.id, product_id: product.id, rating, body: reviewText }, { onConflict: 'product_id,user_id' })
+    
+    let payload = { user_id: user.id, product_id: product.id, rating, body: reviewText, images: reviewImages }
+    let { error } = await supabase.from('reviews').upsert(payload, { onConflict: 'product_id,user_id' })
+    
+    // Fallback if 'images' column doesn't exist
+    if (error && error.message.includes('column "images"')) {
+      const fallbackBody = reviewText + (reviewImages.length > 0 ? '\n|||IMG|||' + reviewImages.join(',') : '')
+      const fallbackPayload = { user_id: user.id, product_id: product.id, rating, body: fallbackBody }
+      const res = await supabase.from('reviews').upsert(fallbackPayload, { onConflict: 'product_id,user_id' })
+      error = res.error
+    }
+
     if (error) toast.error(error.message)
     else {
       toast.success('Review submitted! Thank you 🙏')
       setReview('')
       setRating(0)
+      setReviewImages([])
       // refresh reviews
       supabase.from('reviews').select('*, profiles(full_name,avatar_url)').eq('product_id', product.id)
         .then(({ data }) => setProduct(p => ({ ...p, reviews: data || [] })))
@@ -370,6 +410,45 @@ export default function ProductDetailPage() {
               )}
             </div>
 
+            {/* Frequently Bought Together Bundle */}
+            {fbt.length > 0 && (
+              <div className="pt-6 border-t border-gray-100 dark:border-dark-700 bg-gray-50/50 dark:bg-dark-800/30 -mx-6 px-6 pb-6 rounded-2xl border border-gray-100 dark:border-dark-700">
+                <h3 className="font-bold text-gray-900 dark:text-white mb-4">Frequently Bought Together</h3>
+                <div className="flex flex-wrap items-center gap-3 mb-4">
+                  <div className="relative group cursor-pointer">
+                    <img src={images[0]} className="w-16 h-16 rounded-xl object-cover border-2 border-primary-500" alt="This item" />
+                  </div>
+                  <Plus className="w-4 h-4 text-gray-400" />
+                  {fbt.map((p, idx) => (
+                    <div key={p.id} className="flex items-center gap-3">
+                      <div className="relative group">
+                        <Link to={`/products/${p.slug}`}>
+                          <img src={p.images?.[0]} className="w-16 h-16 rounded-xl object-cover border border-gray-200 dark:border-dark-600 hover:border-primary-400 transition-colors" alt={p.name} title={p.name} />
+                        </Link>
+                      </div>
+                      {idx < fbt.length - 1 && <Plus className="w-4 h-4 text-gray-400" />}
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-center justify-between bg-white dark:bg-dark-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-dark-700">
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-0.5">Bundle Price</p>
+                    <p className="text-xl font-bold text-primary-600">
+                      ₹{(price + fbt.reduce((acc, p) => acc + (p.discount_price || p.price), 0)).toLocaleString('en-IN')}
+                    </p>
+                  </div>
+                  <button className="btn-primary py-2.5 px-6 text-sm" onClick={() => {
+                     if (product.size_options?.length && !selectedSize) { toast.error('Please select a size for the main item first'); return; }
+                     handleAddToCart();
+                     fbt.forEach(p => dispatch(addToCart({ product: p, quantity: 1, size: p.size_options?.[0] })));
+                     toast.success('Bundle added to cart! 🎉');
+                  }}>
+                    Add All to Cart
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Description */}
             {product.description && (
               <div className="pt-4 border-t border-gray-100 dark:border-dark-700">
@@ -420,6 +499,26 @@ export default function ProductDetailPage() {
                   <textarea value={reviewText} onChange={e => setReview(e.target.value)}
                     placeholder="Share your experience with this product..."
                     className="input resize-none h-28 text-sm" />
+                    
+                  {/* Photo Upload for Review */}
+                  <div>
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {reviewImages.map(img => (
+                        <div key={img} className="relative w-16 h-16 rounded-lg overflow-hidden border border-gray-200">
+                          <img src={img} className="w-full h-full object-cover" alt="Review upload" />
+                          <button onClick={() => setReviewImages(prev => prev.filter(i => i !== img))} className="absolute top-0.5 right-0.5 bg-black/50 text-white rounded-full p-0.5"><X className="w-3 h-3" /></button>
+                        </div>
+                      ))}
+                      {reviewImages.length < 3 && (
+                        <label className="w-16 h-16 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:border-primary-400">
+                          <Camera className="w-5 h-5 text-gray-400" />
+                          <input type="file" accept="image/*" multiple onChange={handleImageUpload} className="hidden" disabled={uploadingImg} />
+                        </label>
+                      )}
+                    </div>
+                    {uploadingImg && <p className="text-xs text-primary-500 animate-pulse">Uploading photos...</p>}
+                  </div>
+
                   <button onClick={submitReview} disabled={!reviewText.trim() || submitting}
                     className="btn-primary py-2.5 px-6 disabled:opacity-50">
                     {submitting ? 'Submitting...' : 'Submit Review'}
@@ -453,7 +552,27 @@ export default function ProductDetailPage() {
                       ))}
                     </div>
                   </div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">{review.body}</p>
+                  {(() => {
+                    let text = review.body;
+                    let images = review.images || [];
+                    if (text.includes('|||IMG|||')) {
+                      const parts = text.split('|||IMG|||');
+                      text = parts[0];
+                      images = parts[1].split(',');
+                    }
+                    return (
+                      <>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{text}</p>
+                        {images.length > 0 && (
+                          <div className="flex gap-2 mt-3">
+                            {images.map(img => (
+                              <img key={img} src={img} className="w-16 h-16 object-cover rounded-lg border border-gray-100 dark:border-dark-700" alt="Customer review" />
+                            ))}
+                          </div>
+                        )}
+                      </>
+                    )
+                  })()}
                 </div>
               ))}
             </div>

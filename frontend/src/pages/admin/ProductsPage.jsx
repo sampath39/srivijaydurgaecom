@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus, Search, Edit, Trash2, Eye, ChevronLeft, ChevronRight, AlertTriangle, RefreshCcw } from 'lucide-react'
+import { Plus, Search, Edit, Trash2, Eye, ChevronLeft, ChevronRight, AlertTriangle, RefreshCcw, Upload, Download } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { supabase } from '../../lib/supabase'
 import api from '../../lib/axios'
 import toast from 'react-hot-toast'
+import Papa from 'papaparse'
 
 export default function AdminProductsPage() {
   const [products, setProducts]       = useState([])
@@ -66,6 +68,57 @@ export default function AdminProductsPage() {
     setConfirmName('')
   }
 
+  const handleExport = async () => {
+    const tId = toast.loading('Exporting data...')
+    try {
+      const { data, error } = await supabase.from('products').select('*')
+      if (error) throw error
+      const csv = Papa.unparse(data)
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', `products_export_${Date.now()}.csv`)
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      toast.success('Export completed!', { id: tId })
+    } catch (err) {
+      toast.error('Export failed', { id: tId })
+    }
+  }
+
+  const handleImport = (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    const tId = toast.loading('Importing products...')
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: async (results) => {
+        try {
+          const rows = results.data.map(row => {
+            // Strip out empty string values to avoid type errors
+            const cleanRow = {}
+            for (const [k, v] of Object.entries(row)) {
+              if (v !== '') cleanRow[k] = v
+            }
+            return cleanRow
+          })
+          const { error } = await supabase.from('products').upsert(rows)
+          if (error) throw error
+          toast.success(`Successfully imported ${rows.length} products!`, { id: tId })
+          setPage(1)
+          load(1, search)
+        } catch (err) {
+          toast.error('Import failed: ' + err.message, { id: tId })
+        }
+      },
+      error: () => toast.error('Failed to parse CSV', { id: tId })
+    })
+    e.target.value = ''
+  }
+
   return (
     <div className="space-y-6">
 
@@ -124,7 +177,16 @@ export default function AdminProductsPage() {
           <h1 className="font-display text-2xl font-bold text-gray-900 dark:text-white">Products</h1>
           <p className="text-gray-400 text-sm">{total} total products (all statuses)</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <label className="btn-outline py-2.5 px-4 text-sm flex items-center gap-2 cursor-pointer">
+            <Upload className="w-4 h-4 text-gray-500" />
+            Import CSV
+            <input type="file" accept=".csv" onChange={handleImport} className="hidden" />
+          </label>
+          <button onClick={handleExport} className="btn-outline py-2.5 px-4 text-sm flex items-center gap-2">
+            <Download className="w-4 h-4 text-gray-500" />
+            Export CSV
+          </button>
           <button
             onClick={handleSeedDefaults}
             disabled={seeding || loading}

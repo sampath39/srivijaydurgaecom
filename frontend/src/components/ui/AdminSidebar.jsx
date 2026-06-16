@@ -26,6 +26,7 @@ export default function AdminSidebar() {
   const navigate  = useNavigate()
   const darkMode  = useSelector(s => s.ui.darkMode)
   const profile   = useSelector(s => s.auth.profile)
+  const role      = useSelector(s => s.auth.role) || 'super_admin'
   const [open, setOpen] = useState(false)
 
   const handleLogout = () => {
@@ -37,6 +38,13 @@ export default function AdminSidebar() {
     navigate('/login')
   }
 
+  const filteredLinks = links.filter(link => {
+    if (role === 'super_admin' || role === 'admin') return true
+    if (role === 'support_agent') return ['/admin', '/admin/orders', '/admin/users'].includes(link.to)
+    if (role === 'content_manager') return ['/admin', '/admin/products', '/admin/coupons', '/admin/inventory'].includes(link.to)
+    return false
+  })
+
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
       {/* Brand */}
@@ -45,7 +53,7 @@ export default function AdminSidebar() {
           <div className="w-10 h-10 bg-gradient-gold rounded-xl flex items-center justify-center text-lg shadow-gold">🥻</div>
           <div>
             <p className="font-display font-bold text-white text-sm leading-tight">SVDKE Admin</p>
-            <p className="text-primary-400 text-xs">Control Panel</p>
+            <p className="text-primary-400 text-xs capitalize">{role.replace('_', ' ')}</p>
           </div>
         </div>
       </div>
@@ -65,7 +73,7 @@ export default function AdminSidebar() {
 
       {/* Nav links */}
       <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
-        {links.map(link => (
+        {filteredLinks.map(link => (
           <NavLink key={link.to} to={link.to} end={link.end}
             onClick={() => setOpen(false)}
             className={({ isActive }) =>

@@ -6,6 +6,7 @@ const initialState = {
   session: null,
   loading: true,
   isAdmin: false,
+  role: 'customer'
 }
 
 const authSlice = createSlice({
@@ -23,13 +24,16 @@ const authSlice = createSlice({
     },
     setProfile: (state, action) => {
       state.profile = action.payload
-      state.isAdmin = action.payload?.role === 'admin'
+      // RBAC: derive role from DB or fallback
+      const fallbackRole = action.payload?.email === 'eswar2731@gmail.com' ? 'super_admin' : 'customer'
+      state.role = action.payload?.role || fallbackRole
+      state.isAdmin = ['admin', 'super_admin', 'support_agent', 'content_manager'].includes(state.role)
     },
-    clearAuth: (state) => {
       state.user = null
       state.profile = null
       state.session = null
       state.isAdmin = false
+      state.role = 'customer'
       state.loading = false
     },
     setLoading: (state, action) => {

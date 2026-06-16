@@ -15,8 +15,18 @@ export default function SearchPage() {
   useEffect(() => {
     if (!query) { setResults([]); return }
     setLoading(true)
-    supabase.from('products').select('*, categories(name,slug)')
-      .eq('is_active', true).ilike('name', `%${query}%`).limit(24)
+    
+    // Advanced "Semantic-like" Multi-Field Search
+    // Instead of exact phrase match, we check if each word exists in ANY of the product's attributes.
+    const words = query.trim().split(/\s+/).filter(Boolean);
+    let dbQuery = supabase.from('products').select('*, categories(name,slug)').eq('is_active', true);
+    
+    words.forEach(word => {
+      // Each word must match at least one of these columns
+      dbQuery = dbQuery.or(`name.ilike.%${word}%,description.ilike.%${word}%,brand.ilike.%${word}%,color.ilike.%${word}%,fabric.ilike.%${word}%,subcategory.ilike.%${word}%`);
+    });
+
+    dbQuery.limit(24)
       .then(({ data }) => { setResults(data || []); setLoading(false) })
   }, [query])
 

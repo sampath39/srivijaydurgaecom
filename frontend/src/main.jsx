@@ -2,6 +2,8 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { Provider } from 'react-redux'
 import { Toaster } from 'react-hot-toast'
+import * as Sentry from '@sentry/react'
+import './i18n'
 import App from './App.jsx'
 import { store } from './store/index.js'
 import './index.css'
@@ -45,6 +47,17 @@ window.addEventListener('unhandledrejection', function (event) {
 if (localStorage.getItem('svdke_dark') === 'true') {
   document.documentElement.classList.add('dark')
 }
+
+Sentry.init({
+  dsn: import.meta.env.VITE_SENTRY_DSN || "",
+  integrations: [
+    Sentry.browserTracingIntegration(),
+    Sentry.replayIntegration(),
+  ],
+  tracesSampleRate: 1.0,
+  replaysSessionSampleRate: 0.1,
+  replaysOnErrorSampleRate: 1.0,
+});
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

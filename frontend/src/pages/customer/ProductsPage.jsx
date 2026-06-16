@@ -15,6 +15,21 @@ const SORT_OPTIONS = [
   { value: 'rating',     label: 'Top Rated' },
 ]
 
+const FILTER_COLORS = [
+  { name: 'Red', hex: '#ef4444' },
+  { name: 'Blue', hex: '#3b82f6' },
+  { name: 'Green', hex: '#22c55e' },
+  { name: 'Yellow', hex: '#eab308' },
+  { name: 'Black', hex: '#000000' },
+  { name: 'White', hex: '#ffffff', border: true },
+  { name: 'Pink', hex: '#ec4899' },
+  { name: 'Orange', hex: '#f97316' },
+  { name: 'Purple', hex: '#a855f7' }
+]
+
+const FILTER_FABRICS = ['Cotton', 'Silk', 'Linen', 'Georgette', 'Chiffon', 'Crepe']
+
+
 export default function ProductsPage() {
   const [params, setParams]   = useSearchParams()
   const [products, setProducts] = useState([])
@@ -30,6 +45,8 @@ export default function ProductsPage() {
   const flashSale   = params.get('flash_sale') || ''
   const minPrice    = params.get('min_price') || ''
   const maxPrice    = params.get('max_price') || ''
+  const colors      = params.get('colors') ? params.get('colors').split(',') : []
+  const fabrics     = params.get('fabrics') ? params.get('fabrics').split(',') : []
   const page        = parseInt(params.get('page') || '1', 10)
   const LIMIT = 20
 
@@ -70,6 +87,8 @@ export default function ProductsPage() {
         if (flashSale)  query = query.eq('is_flash_sale', true)
         if (minPrice)   query = query.gte('price', minPrice)
         if (maxPrice)   query = query.lte('price', maxPrice)
+        if (colors.length > 0) query = query.in('color', colors)
+        if (fabrics.length > 0) query = query.in('fabric', fabrics)
 
         const sortMap = {
           newest:     ['created_at', false],
@@ -110,6 +129,12 @@ export default function ProductsPage() {
     setParams(next)
   }
 
+  const updateArrayParam = (paramName, value) => {
+    const current = params.get(paramName) ? params.get(paramName).split(',') : []
+    const updated = current.includes(value) ? current.filter(v => v !== value) : [...current, value]
+    updateParams({ [paramName]: updated.length > 0 ? updated.join(',') : '' })
+  }
+
   const clearAll = () => setParams({})
 
   const activeFilters = [
@@ -117,6 +142,8 @@ export default function ProductsPage() {
     flashSale && { key: 'flash_sale', label: 'Flash Sale' },
     minPrice  && { key: 'min_price',  label: `Min ₹${minPrice}` },
     maxPrice  && { key: 'max_price',  label: `Max ₹${maxPrice}` },
+    ...colors.map(c => ({ key: `color_${c}`, label: c, onRemove: () => updateArrayParam('colors', c) })),
+    ...fabrics.map(f => ({ key: `fabric_${f}`, label: f, onRemove: () => updateArrayParam('fabrics', f) })),
   ].filter(Boolean)
 
   // Find which department the current category belongs to
@@ -202,6 +229,46 @@ export default function ProductsPage() {
                   className="input py-2 text-sm bg-gray-50" />
               </div>
             </div>
+
+            <hr className="border-gray-100 dark:border-dark-700 my-6" />
+
+            {/* Colors Filter */}
+            <div className="mb-6">
+              <h4 className="font-bold text-gray-900 dark:text-white mb-3 text-sm">Colors</h4>
+              <div className="flex flex-wrap gap-2">
+                {FILTER_COLORS.map(c => {
+                  const isActive = colors.includes(c.name);
+                  return (
+                    <button key={c.name} onClick={() => updateArrayParam('colors', c.name)}
+                      title={c.name}
+                      className={`w-7 h-7 rounded-full transition-all flex items-center justify-center ${isActive ? 'ring-2 ring-primary-500 ring-offset-2 dark:ring-offset-dark-900' : 'hover:scale-110'} ${c.border ? 'border border-gray-300' : ''}`}
+                      style={{ backgroundColor: c.hex }}
+                    >
+                      {isActive && <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className={`w-2 h-2 rounded-full ${c.name === 'White' || c.name === 'Yellow' ? 'bg-black' : 'bg-white'}`} />}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            <hr className="border-gray-100 dark:border-dark-700 my-6" />
+
+            {/* Fabric Filter */}
+            <div className="mb-6">
+              <h4 className="font-bold text-gray-900 dark:text-white mb-3 text-sm">Fabric</h4>
+              <div className="space-y-2">
+                {FILTER_FABRICS.map(f => (
+                  <label key={f} className="flex items-center gap-2 cursor-pointer group">
+                    <input type="checkbox" checked={fabrics.includes(f)}
+                      onChange={() => updateArrayParam('fabrics', f)}
+                      className="accent-primary-500 w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
+                    <span className="text-sm text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">{f}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <hr className="border-gray-100 dark:border-dark-700 my-6" />
 
             {/* Type Filters */}
             <div>

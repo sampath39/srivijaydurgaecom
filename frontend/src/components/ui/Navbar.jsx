@@ -14,6 +14,7 @@ import { toggleCart } from '../../store/slices/cartSlice'
 import { selectCartCount } from '../../store/slices/cartSlice'
 import { selectWishlistItems } from '../../store/slices/wishlistSlice'
 import toast from 'react-hot-toast'
+import { useTranslation } from 'react-i18next'
 
 import { TAXONOMY } from '../../lib/taxonomy'
 
@@ -34,6 +35,7 @@ export default function Navbar() {
   const darkMode    = useSelector(s => s.ui.darkMode)
   const cartCount   = useSelector(selectCartCount)
   const wishlistItems = useSelector(selectWishlistItems)
+  const { t, i18n } = useTranslation()
 
   const [scrolled, setScrolled]         = useState(false)
   const [searchOpen, setSearchOpen]     = useState(false)
@@ -115,7 +117,7 @@ export default function Navbar() {
                     ? 'bg-primary-500 text-white shadow-md shadow-primary-500/20' 
                     : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-800 hover:text-primary-600'
                 }`}>
-                Home
+                {t('nav.home')}
               </Link>
               
               {location.pathname.startsWith('/products') ? (
@@ -254,6 +256,11 @@ export default function Navbar() {
                   </AnimatePresence>
                 </div>
               )}
+              {/* Language Toggle */}
+              <button onClick={() => i18n.changeLanguage(i18n.language === 'te' ? 'en' : 'te')}
+                className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-800 transition-colors uppercase">
+                {i18n.language === 'te' ? 'EN' : 'TE'}
+              </button>
 
               {/* Cart */}
               <button onClick={() => dispatch(toggleCart())} className="btn-ghost p-2 relative">

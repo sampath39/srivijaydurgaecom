@@ -134,38 +134,82 @@ export default function AdminBillingPage() {
     
     setIsProcessing(true)
     try {
-      const payload = {
-        customerName: customer.name,
-        customerPhone: customer.phone,
-        customerEmail: customer.email,
-        customerAddress: customer.address,
-        items: cart,
-        subtotal,
-        discount: discountAmount,
-        tax: Number(taxValue),
-        total: finalTotal,
-        paymentMethod
-      }
-      const { data } = await api.post('/api/pos/checkout', payload)
-      if (data.success) {
-        toast.success('Invoice generated successfully!')
-        setInvoice({
-          ...data.data,
-          items: cart,
-          customer_name: customer.name,
-          customer_phone: customer.phone,
-          customer_email: customer.email,
-          customer_address: customer.address,
+      const { format } = await import('date-fns')
+      const invoiceNumber = 'INV-' + format(new Date(), 'yyyyMMdd') + '-' + Math.floor(1000 + Math.random() * 9000)
+
+      // 1. Insert invoice
+      const { data: invData, error: invError } = await supabase
+        .from('invoices')
+        .insert([{
+          invoice_number: invoiceNumber,
+          customer_name: customer.name || null,
+          customer_phone: customer.phone || null,
+          customer_email: customer.email || null,
+          customer_address: customer.address || null,
+          subtotal,
+          discount: discountAmount,
+          tax: Number(taxValue),
+          total: finalTotal,
+          payment_method: paymentMethod,
+          status: 'COMPLETED'
+        }])
+        .select()
+        .single()
+      
+      if (invError) throw invError
+      
+      const invoiceId = invData.id
+
+      // 2. Insert items and update stock
+      for (const item of cart) {
+        await supabase.from('invoice_items').insert([{
+          invoice_id: invoiceId,
+          product_id: item.productId,
+          product_name: item.productName,
+          sku: item.sku,
+          quantity: item.quantity,
+          unit_price: item.unitPrice,
+          subtotal: item.subtotal
+        }])
+
+        await supabase.from('inventory_transactions').insert([{
+          product_id: item.productId,
+          transaction_type: 'SALE',
+          quantity: -item.quantity,
+          reference_id: invoiceId,
+          reference_type: 'INVOICE'
+        }])
+
+        await supabase.rpc('decrement_stock', {
+          p_product_id: item.productId,
+          p_quantity: item.quantity
         })
-        setShowInvoiceModal(true)
-        // Reset form
-        setCart([])
-        setCustomer({ name: '', phone: '', email: '', address: '' })
-        setDiscountValue(0)
-        setTaxValue(0)
       }
+
+      toast.success('Invoice generated successfully!')
+      setInvoice({
+        ...invData,
+        items: cart,
+      })
+      setShowInvoiceModal(true)
+      
+      // Reset form
+      setCart([])
+      setCustomer({ name: '', phone: '', email: '', address: '' })
+      setDiscountValue(0)
+      setTaxValue(0)
+
+      // Refresh product stock list silently
+      const { data: updatedProducts } = await supabase.from('products').select('id, name, sku, stock_count, price, discount_price, images').eq('is_active', true).order('name')
+      if (updatedProducts) {
+        setAllProducts(updatedProducts)
+        // Reset search to empty
+        setSearchQuery('')
+      }
+      
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Checkout failed')
+      console.error(err)
+      toast.error(err.message || 'Checkout failed')
     } finally {
       setIsProcessing(false)
     }

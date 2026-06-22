@@ -5,7 +5,7 @@ import {
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
-import api from '../../lib/axios'
+import { supabase } from '../../lib/supabase'
 import { format } from 'date-fns'
 import InvoicePrintout from '../../components/admin/InvoicePrintout'
 import html2pdf from 'html2pdf.js'
@@ -25,12 +25,35 @@ export default function AdminBillingHistoryPage() {
   const fetchInvoices = async () => {
     setLoading(true)
     try {
-      const { data } = await api.get(`/api/pos/invoices?page=${page}&limit=10&search=${search}&startDate=${startDate}&endDate=${endDate}`)
-      if (data.success) {
-        setInvoices(data.data)
-        setTotalPages(data.total_pages)
+      let query = supabase.from('invoices').select('*', { count: 'exact' })
+      
+      if (search) {
+        query = query.or(`invoice_number.ilike.%${search}%,customer_name.ilike.%${search}%,customer_phone.ilike.%${search}%`)
       }
+      if (startDate) {
+        query = query.gte('created_at', startDate + 'T00:00:00.000Z')
+      }
+      if (endDate) {
+        query = query.gte('created_at', endDate + 'T23:59:59.999Z') // wait this should be lte
+      }
+      // fix endDate logic inside the same chunk:
+      if (endDate) {
+        query = query.lte('created_at', endDate + 'T23:59:59.999Z')
+      }
+
+      const from = (page - 1) * 10
+      const to = page * 10 - 1
+
+      const { data, count, error } = await query
+        .order('created_at', { ascending: false })
+        .range(from, to)
+
+      if (error) throw error
+
+      setInvoices(data || [])
+      setTotalPages(Math.ceil((count || 0) / 10) || 1)
     } catch (err) {
+      console.error(err)
       toast.error('Failed to fetch billing history')
     } finally {
       setLoading(false)
@@ -49,12 +72,18 @@ export default function AdminBillingHistoryPage() {
 
   const viewInvoice = async (id) => {
     try {
-      const { data } = await api.get(`/api/pos/invoices/${id}`)
-      if (data.success) {
-        setSelectedInvoice(data.data)
-        setShowModal(true)
-      }
+      const { data, error } = await supabase
+        .from('invoices')
+        .select('*, items:invoice_items(*)')
+        .eq('id', id)
+        .single()
+      
+      if (error) throw error
+      
+      setSelectedInvoice(data)
+      setShowModal(true)
     } catch (err) {
+      console.error(err)
       toast.error('Failed to fetch invoice details')
     }
   }

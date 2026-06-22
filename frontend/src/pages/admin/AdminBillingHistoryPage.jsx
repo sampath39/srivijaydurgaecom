@@ -8,7 +8,6 @@ import { toast } from 'react-hot-toast'
 import { supabase } from '../../lib/supabase'
 import { format } from 'date-fns'
 import InvoicePrintout from '../../components/admin/InvoicePrintout'
-import html2pdf from 'html2pdf.js'
 
 export default function AdminBillingHistoryPage() {
   const [invoices, setInvoices] = useState([])
@@ -90,19 +89,6 @@ export default function AdminBillingHistoryPage() {
 
   const handlePrint = () => {
     window.print()
-  }
-
-  const handleDownloadPDF = () => {
-    const element = document.getElementById('invoice-print-area')
-    if (!element) return
-    const opt = {
-      margin:       10,
-      filename:     `${selectedInvoice.invoice_number}.pdf`,
-      image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 2 },
-      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    }
-    html2pdf().set(opt).from(element).save()
   }
 
   return (
@@ -240,11 +226,8 @@ export default function AdminBillingHistoryPage() {
             <div className="bg-gray-50 dark:bg-dark-800 p-4 border-b border-gray-100 dark:border-white/5 flex justify-between items-center sticky top-0 z-10 print:hidden">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white">Invoice Details</h3>
               <div className="flex gap-3">
-                <button onClick={handleDownloadPDF} className="btn-secondary px-4 py-2 flex items-center gap-2">
-                  <Download className="w-4 h-4" /> Download PDF
-                </button>
                 <button onClick={handlePrint} className="btn-primary px-4 py-2 flex items-center gap-2">
-                  <Printer className="w-4 h-4" /> Print Bill
+                  <Printer className="w-4 h-4" /> Print / Save as PDF
                 </button>
                 <button onClick={() => setShowModal(false)} className="p-2 text-gray-500 hover:text-gray-700 bg-gray-200 dark:bg-white/10 rounded-xl transition-colors ml-4">
                   <X className="w-5 h-5" />

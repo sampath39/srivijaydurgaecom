@@ -8,7 +8,7 @@ export default function InvoicePrintout({ invoice }) {
   const items = Array.isArray(invoice.items) ? invoice.items : []
 
   return (
-    <div className="bg-white text-black p-8 max-w-[800px] mx-auto font-sans" id="invoice-content">
+    <div className="bg-white text-black p-8 max-w-[800px] mx-auto font-sans" id="invoice-print-area">
       {/* Header */}
       <div className="flex justify-between items-start border-b-2 border-gray-800 pb-6 mb-6">
         <div>

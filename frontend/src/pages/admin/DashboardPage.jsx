@@ -154,7 +154,7 @@ export default function AdminDashboard() {
           <button 
             onClick={handleResetRevenue}
             disabled={resetting}
-            className="btn-secondary border-red-500 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 px-4 py-2 text-sm"
+            className="inline-flex items-center justify-center gap-2 rounded-xl transition-all duration-200 cursor-pointer border-2 border-red-500 bg-white text-red-500 hover:bg-red-50 dark:bg-dark-800 dark:hover:bg-red-900/20 px-4 py-2 text-sm font-semibold shadow-sm"
           >
             {resetting ? 'Resetting...' : '🚨 Reset Revenue'}
           </button>

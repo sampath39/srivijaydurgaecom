@@ -29,6 +29,7 @@ const authSlice = createSlice({
       state.role = action.payload?.role || fallbackRole
       state.isAdmin = ['admin', 'super_admin', 'support_agent', 'content_manager'].includes(state.role)
     },
+    clearAuth: (state) => {
       state.user = null
       state.profile = null
       state.session = null

@@ -13,6 +13,7 @@ import html2pdf from 'html2pdf.js'
 export default function AdminBillingPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState([])
+  const [allProducts, setAllProducts] = useState([])
   const [isSearching, setIsSearching] = useState(false)
   const [cart, setCart] = useState([])
   const searchRef = useRef(null)
@@ -32,24 +33,41 @@ export default function AdminBillingPage() {
   const discountAmount = discountType === 'flat' ? Number(discountValue) : (subtotal * Number(discountValue) / 100)
   const finalTotal = subtotal - discountAmount + Number(taxValue)
 
-  // Debounced search
+  // Load all products initially
   useEffect(() => {
-    const delayDebounceFn = setTimeout(async () => {
+    const fetchProducts = async () => {
       setIsSearching(true)
       try {
-        const { data } = await api.get(`/api/pos/products?search=${encodeURIComponent(searchQuery)}`)
+        const { data } = await api.get('/api/pos/products')
         if (data.success) {
+          setAllProducts(data.data)
           setSearchResults(data.data)
         }
       } catch (err) {
-        console.error('Search error', err)
+        console.error('Failed to load products', err)
       } finally {
         setIsSearching(false)
       }
-    }, 400)
+    }
+    fetchProducts()
+  }, [])
 
-    return () => clearTimeout(delayDebounceFn)
-  }, [searchQuery])
+  // Client-side instant filtering
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults(allProducts)
+      return
+    }
+
+    const terms = searchQuery.toLowerCase().trim().split(/\s+/)
+    const filtered = allProducts.filter(p => {
+      const name = p.name?.toLowerCase() || ''
+      const sku = p.sku?.toLowerCase() || ''
+      return terms.every(term => name.includes(term) || sku.includes(term))
+    })
+    
+    setSearchResults(filtered)
+  }, [searchQuery, allProducts])
 
   const addToCart = (product) => {
     if (product.stock_count <= 0) {

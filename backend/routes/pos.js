@@ -12,23 +12,21 @@ const pool = new Pool({
 router.get('/products', auth, adminOnly, async (req, res) => {
   try {
     const { search } = req.query
-    if (!search || search.length < 2) {
-      return res.json({ success: true, data: [] })
-    }
-
-    const query = `
+    let queryStr = `
       SELECT id, name, slug, price, discount_price, stock_count, sku, images, is_active
       FROM products
-      WHERE is_active = true 
-        AND (
-          name ILIKE $1 
-          OR sku ILIKE $1 
-          OR CAST(id AS TEXT) ILIKE $1
-        )
-      LIMIT 20
+      WHERE is_active = true
     `
-    const values = [`%${search}%`]
-    const { rows } = await pool.query(query, values)
+    const values = []
+    
+    if (search && search.trim() !== '') {
+      values.push(`%${search}%`)
+      queryStr += ` AND (name ILIKE $1 OR sku ILIKE $1 OR CAST(id AS TEXT) ILIKE $1)`
+    }
+    
+    queryStr += ` ORDER BY name ASC LIMIT 50`
+
+    const { rows } = await pool.query(queryStr, values)
 
     res.json({ success: true, data: rows })
   } catch (err) {

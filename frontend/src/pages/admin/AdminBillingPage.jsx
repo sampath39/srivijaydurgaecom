@@ -15,7 +15,6 @@ export default function AdminBillingPage() {
   const [searchResults, setSearchResults] = useState([])
   const [isSearching, setIsSearching] = useState(false)
   const [cart, setCart] = useState([])
-  const [showDropdown, setShowDropdown] = useState(false)
   const searchRef = useRef(null)
 
   const [customer, setCustomer] = useState({ name: '', phone: '', email: '', address: '' })
@@ -35,18 +34,12 @@ export default function AdminBillingPage() {
 
   // Debounced search
   useEffect(() => {
-    if (searchQuery.length < 2) {
-      setSearchResults([])
-      setShowDropdown(false)
-      return
-    }
     const delayDebounceFn = setTimeout(async () => {
       setIsSearching(true)
       try {
         const { data } = await api.get(`/api/pos/products?search=${encodeURIComponent(searchQuery)}`)
         if (data.success) {
           setSearchResults(data.data)
-          setShowDropdown(true)
         }
       } catch (err) {
         console.error('Search error', err)
@@ -57,17 +50,6 @@ export default function AdminBillingPage() {
 
     return () => clearTimeout(delayDebounceFn)
   }, [searchQuery])
-
-  // Handle clicking outside of search dropdown
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (searchRef.current && !searchRef.current.contains(event.target)) {
-        setShowDropdown(false)
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside)
-    return () => document.removeEventListener("mousedown", handleClickOutside)
-  }, [searchRef])
 
   const addToCart = (product) => {
     if (product.stock_count <= 0) {
@@ -99,8 +81,6 @@ export default function AdminBillingPage() {
         image: product.images[0]
       }])
     }
-    setSearchQuery('')
-    setShowDropdown(false)
     toast.success('Added to cart')
   }
 
@@ -198,8 +178,8 @@ export default function AdminBillingPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Left Column: Search & Cart */}
         <div className="lg:col-span-8 space-y-6">
-          {/* Search Bar */}
-          <div className="bg-white dark:bg-dark-800 p-6 rounded-2xl shadow-premium border border-gray-100 dark:border-white/5 relative" ref={searchRef}>
+          {/* Search Bar & Products Grid */}
+          <div className="bg-white dark:bg-dark-800 p-6 rounded-2xl shadow-premium border border-gray-100 dark:border-white/5 space-y-6">
             <div className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
@@ -208,54 +188,41 @@ export default function AdminBillingPage() {
                 className="input-primary pl-12 h-14 text-lg w-full"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                onFocus={() => { if (searchResults.length > 0) setShowDropdown(true) }}
               />
               {isSearching && (
                 <div className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
               )}
             </div>
 
-            {/* Dropdown */}
-            <AnimatePresence>
-              {showDropdown && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 10 }}
-                  className="absolute left-0 right-0 top-full mt-2 bg-white dark:bg-dark-900 rounded-xl shadow-2xl border border-gray-100 dark:border-white/10 z-50 overflow-hidden"
-                >
-                  {searchResults.length === 0 ? (
-                    <div className="p-4 text-center text-gray-500">No products found</div>
-                  ) : (
-                    <ul className="max-h-[300px] overflow-y-auto p-2">
-                      {searchResults.map(product => (
-                        <li key={product.id}>
-                          <button
-                            onClick={() => addToCart(product)}
-                            disabled={product.stock_count <= 0}
-                            className={`w-full text-left flex items-center gap-4 p-3 rounded-lg transition-colors ${
-                              product.stock_count <= 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50 dark:hover:bg-white/5'
-                            }`}
-                          >
-                            <img src={product.images?.[0] || 'https://via.placeholder.com/50'} alt={product.name} className="w-12 h-12 object-cover rounded-md" />
-                            <div className="flex-1">
-                              <p className="font-semibold text-gray-900 dark:text-white">{product.name}</p>
-                              <p className="text-xs text-gray-500">SKU: {product.sku}</p>
-                            </div>
-                            <div className="text-right">
-                              <p className="font-bold text-primary-500">₹{product.discount_price || product.price}</p>
-                              <p className={`text-xs ${product.stock_count > 0 ? 'text-green-500' : 'text-red-500'}`}>
-                                {product.stock_count > 0 ? `${product.stock_count} in stock` : 'Out of Stock'}
-                              </p>
-                            </div>
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </motion.div>
+            {/* Products Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 max-h-[400px] overflow-y-auto pr-2">
+              {searchResults.length === 0 && !isSearching ? (
+                <div className="col-span-full py-8 text-center text-gray-500">No products found</div>
+              ) : (
+                searchResults.map(product => (
+                  <button
+                    key={product.id}
+                    onClick={() => addToCart(product)}
+                    disabled={product.stock_count <= 0}
+                    className={`flex flex-col text-left p-3 rounded-xl border transition-all ${
+                      product.stock_count <= 0 
+                        ? 'opacity-50 cursor-not-allowed border-gray-100 dark:border-white/5' 
+                        : 'border-gray-200 dark:border-white/10 hover:border-primary-500 hover:shadow-md dark:hover:border-primary-500'
+                    }`}
+                  >
+                    <img src={product.images?.[0] || 'https://via.placeholder.com/150'} alt={product.name} className="w-full h-32 object-cover rounded-lg mb-3" />
+                    <h3 className="font-semibold text-sm text-gray-900 dark:text-white line-clamp-2 mb-1">{product.name}</h3>
+                    <p className="text-xs text-gray-500 mb-2">SKU: {product.sku}</p>
+                    <div className="mt-auto flex items-center justify-between w-full">
+                      <span className="font-bold text-primary-500">₹{product.discount_price || product.price}</span>
+                      <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${product.stock_count > 0 ? 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400'}`}>
+                        {product.stock_count > 0 ? `${product.stock_count} left` : 'Out'}
+                      </span>
+                    </div>
+                  </button>
+                ))
               )}
-            </AnimatePresence>
+            </div>
           </div>
 
           {/* Cart Table */}

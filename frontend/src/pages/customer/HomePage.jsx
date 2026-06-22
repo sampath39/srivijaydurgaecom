@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowRight, Zap, Star, Gift, Users, ShoppingBag, Truck, Shield, MapPin, Phone } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import ProductCard from '../../components/ui/ProductCard'
@@ -60,12 +60,12 @@ const FEATURES = [
 
 export default function HomePage() {
   const { t } = useTranslation()
-  const [currentSlide, setCurrentSlide]   = useState(0)
-  const [featured, setFeatured]           = useState([])
-  const [flashSale, setFlashSale]         = useState([])
-  const [loading, setLoading]             = useState(true)
+  const [currentSlide, setCurrentSlide]         = useState(0)
+  const [featuredProducts, setFeaturedProducts] = useState([])
+  const [flashProducts, setFlashProducts]       = useState([])
+  const [loadingFeatured, setLoadingFeatured]   = useState(true)
+  const [loadingFlash, setLoadingFlash]         = useState(true)
   const cartCount = useSelector(selectCartCount)
-  const [loadingFlash, setLFlash]         = useState(true)
   const profile = useSelector(s => s.auth.profile)
 
   useEffect(() => {
@@ -78,16 +78,16 @@ export default function HomePage() {
       .eq('is_active', true).eq('is_featured', true).limit(8)
       .then(({ data, error }) => {
         if (error) console.error("Supabase error featured products:", error)
-        setFeatured(data || [])
-        setLF(false)
+        setFeaturedProducts(data || [])
+        setLoadingFeatured(false)
       })
 
     supabase.from('products').select('*, categories(name,slug)')
       .eq('is_active', true).eq('is_flash_sale', true).limit(4)
       .then(({ data, error }) => {
         if (error) console.error("Supabase error flash sale products:", error)
-        setFlash(data || [])
-        setLFlash(false)
+        setFlashProducts(data || [])
+        setLoadingFlash(false)
       })
   }, [])
 

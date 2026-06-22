@@ -67,6 +67,8 @@ const AdminUsers        = lazyRetry(() => import('./pages/admin/UsersPage'))
 const AdminAnalytics    = lazyRetry(() => import('./pages/admin/AnalyticsPage'))
 const AdminInventory    = lazyRetry(() => import('./pages/admin/InventoryPage'))
 const AdminCoupons      = lazyRetry(() => import('./pages/admin/CouponsPage'))
+const AdminBilling      = lazyRetry(() => import('./pages/admin/AdminBillingPage'))
+const AdminBillingHistory = lazyRetry(() => import('./pages/admin/AdminBillingHistoryPage'))
 
 function PageLoader() {
   return (
@@ -207,6 +209,8 @@ function AppInner() {
               <Route path="/admin/analytics"        element={<AdminAnalytics />} />
               <Route path="/admin/inventory"        element={<AdminInventory />} />
               <Route path="/admin/coupons"          element={<AdminCoupons />} />
+              <Route path="/admin/billing"          element={<AdminBilling />} />
+              <Route path="/admin/billing/history"  element={<AdminBillingHistory />} />
             </Route>
           </Route>
 

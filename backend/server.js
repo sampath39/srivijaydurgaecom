@@ -59,6 +59,7 @@ app.use('/api/referrals',  require('./routes/referrals'))
 app.use('/api/payments',   require('./routes/payments'))
 app.use('/api/admin',      require('./routes/admin'))
 app.use('/api/addresses',  require('./routes/addresses'))
+app.use('/api/pos',        require('./routes/pos'))
 
 // ── Root route ───────────────────────────────────────────────
 app.get('/', (_req, res) => res.json({

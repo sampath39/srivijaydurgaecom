@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { motion } from 'framer-motion'
 import {
   LayoutDashboard, Package, ShoppingBag, Users, Tag,
-  BarChart2, Boxes, LogOut, Sun, Moon, Menu, X
+  BarChart2, Boxes, LogOut, Sun, Moon, Menu, X, Receipt
 } from 'lucide-react'
 import { useState } from 'react'
 import { supabase } from '../../lib/supabase'
@@ -13,6 +13,7 @@ import toast from 'react-hot-toast'
 
 const links = [
   { to: '/admin',           icon: LayoutDashboard, label: 'Dashboard', end: true },
+  { to: '/admin/billing',   icon: Receipt,         label: 'Billing / POS' },
   { to: '/admin/products',  icon: Package,         label: 'Products' },
   { to: '/admin/orders',    icon: ShoppingBag,     label: 'Orders' },
   { to: '/admin/users',     icon: Users,           label: 'Customers' },
@@ -41,7 +42,7 @@ export default function AdminSidebar() {
   const filteredLinks = links.filter(link => {
     if (role === 'super_admin' || role === 'admin') return true
     if (role === 'support_agent') return ['/admin', '/admin/orders', '/admin/users'].includes(link.to)
-    if (role === 'content_manager') return ['/admin', '/admin/products', '/admin/coupons', '/admin/inventory'].includes(link.to)
+    if (role === 'content_manager') return ['/admin', '/admin/products', '/admin/coupons', '/admin/inventory', '/admin/billing'].includes(link.to)
     return false
   })
 

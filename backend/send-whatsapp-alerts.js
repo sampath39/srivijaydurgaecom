@@ -13,7 +13,7 @@ async function sendWhatsAppAlert(toNumber) {
     console.log(`Sending WhatsApp alert to ${formattedNumber}...`)
     
     const message = await client.messages.create({
-      body: '🔥 Price dropped from ₹5999 → ₹4499. Sale offers available only 9 hours! Click here to grab your Kadi Saree now: http://localhost:3000',
+      body: '🔥 Price dropped from ₹5999 → ₹4499. Sale offers available only 9 hours! Click here to grab your Kadi Saree now: https://srivijaydurgaecom-frontend.vercel.app',
       from: fromNumber,
       to: formattedNumber
     })

@@ -15,7 +15,7 @@ export default function AdminDashboard() {
   const [data, setData]       = useState(null)
   const [loading, setLoading] = useState(true)
   const [sendingAlert, setSendingAlert] = useState(false)
-  const [whatsappMessage, setWhatsappMessage] = useState('🔥 Price dropped from ₹5999 → ₹4499. Sale offers available only 9 hours! Click here to grab your Kadi Saree now: http://localhost:3000')
+  const [whatsappMessage, setWhatsappMessage] = useState('🔥 Price dropped from ₹5999 → ₹4499. Sale offers available only 9 hours! Click here to grab your Kadi Saree now: https://srivijaydurgaecom-frontend.vercel.app')
   const [usersList, setUsersList] = useState([])
   const [selectedUserId, setSelectedUserId] = useState('')
   const [discountPercent, setDiscountPercent] = useState('')

@@ -85,7 +85,8 @@ router.post('/:id/cancel', auth, async (req, res) => {
 // Admin: list all orders with customer info, pagination, filters
 router.get('/admin/all', auth, async (req, res) => {
   try {
-    if (req.profile?.role !== 'admin') {
+    const allowedRoles = ['admin', 'super_admin', 'support_agent', 'content_manager']
+    if (!allowedRoles.includes(req.profile?.role)) {
       return res.status(403).json({ success: false, message: 'Admin access required' })
     }
 
@@ -120,7 +121,8 @@ router.get('/admin/all', auth, async (req, res) => {
 // Admin: update order status
 router.put('/:id/status', auth, async (req, res) => {
   try {
-    if (req.profile?.role !== 'admin') {
+    const allowedRoles = ['admin', 'super_admin', 'support_agent', 'content_manager']
+    if (!allowedRoles.includes(req.profile?.role)) {
       return res.status(403).json({ success: false, message: 'Admin access required' })
     }
 

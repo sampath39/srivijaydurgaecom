@@ -20,6 +20,26 @@ export default function AdminDashboard() {
   const [selectedUserId, setSelectedUserId] = useState('')
   const [discountPercent, setDiscountPercent] = useState('')
   const [discountLoading, setDiscountLoading] = useState(false)
+  const [resetting, setResetting] = useState(false)
+
+  const handleResetRevenue = async () => {
+    if (!window.confirm("WARNING: This will completely delete ALL orders, POS invoices, and reset the revenue to zero. This action CANNOT be undone. Are you absolutely sure?")) return
+    
+    setResetting(true)
+    try {
+      const { data } = await api.delete('/admin/revenue/reset')
+      if (data.success) {
+        import('react-hot-toast').then(({ default: toast }) => toast.success(data.message))
+        // Reload dashboard stats
+        const { data: d } = await api.get('/admin/dashboard')
+        setData(d)
+      }
+    } catch (err) {
+      import('react-hot-toast').then(({ default: toast }) => toast.error(err.response?.data?.message || 'Failed to reset revenue'))
+    } finally {
+      setResetting(false)
+    }
+  }
 
   const handleApplySpecialDiscount = async () => {
     if (!selectedUserId) {
@@ -130,9 +150,18 @@ export default function AdminDashboard() {
           <h1 className="font-display text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
           <p className="text-gray-500 text-sm">srivijaydurgakadhiemporeum — Overview</p>
         </div>
-        <div className="text-right">
-          <p className="text-xs text-gray-400">Last 30 days</p>
-          <p className="text-sm font-medium text-primary-600">{new Date().toLocaleDateString('en-IN', { month:'long', year:'numeric' })}</p>
+        <div className="flex items-center gap-4 text-right">
+          <button 
+            onClick={handleResetRevenue}
+            disabled={resetting}
+            className="btn-secondary border-red-500 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 px-4 py-2 text-sm"
+          >
+            {resetting ? 'Resetting...' : '🚨 Reset Revenue'}
+          </button>
+          <div>
+            <p className="text-xs text-gray-400">Last 30 days</p>
+            <p className="text-sm font-medium text-primary-600">{new Date().toLocaleDateString('en-IN', { month:'long', year:'numeric' })}</p>
+          </div>
         </div>
       </div>
 

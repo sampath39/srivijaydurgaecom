@@ -40,6 +40,24 @@ router.get('/dashboard', auth, adminOnly, async (_req, res) => {
   } catch (err) { res.status(500).json({ success: false, message: err.message }) }
 })
 
+// DELETE /api/admin/revenue/reset
+router.delete('/revenue/reset', auth, adminOnly, async (req, res) => {
+  try {
+    const { Pool } = require('pg')
+    const pool = new Pool({ connectionString: process.env.DATABASE_URL })
+    
+    // Truncate both orders and invoices (and cascade to their items/logs)
+    await pool.query('TRUNCATE TABLE public.orders CASCADE;')
+    await pool.query('TRUNCATE TABLE public.invoices CASCADE;')
+    
+    await pool.end()
+    
+    res.json({ success: true, message: 'Revenue and orders have been completely reset.' })
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message })
+  }
+})
+
 // GET /api/admin/orders
 router.get('/orders', auth, adminOnly, async (req, res) => {
   try {

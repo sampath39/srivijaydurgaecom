@@ -364,7 +364,8 @@ router.post('/verify', auth, async (req, res) => {
   // ── Step 5: Post-order actions (non-critical) ─────────────
   // Deduct stock (SECURITY DEFINER function — use admin client)
   for (const item of details.validatedItems) {
-    await supabaseAdmin.rpc('decrement_stock', { p_product_id: item.product.id, p_quantity: item.quantity }).catch(e => console.warn('[verify] stock deduct error:', e.message))
+    const { error: stockErr } = await supabaseAdmin.rpc('decrement_stock', { p_product_id: item.product.id, p_quantity: item.quantity })
+    if (stockErr) console.warn('[verify] stock deduct error:', stockErr.message)
   }
 
   // Award reward points
@@ -398,11 +399,11 @@ router.post('/verify', auth, async (req, res) => {
   }
 
   // Clear cart
-  await db.from('carts').delete().eq('user_id', req.user.id).catch(() => {})
+  await db.from('carts').delete().eq('user_id', req.user.id)
 
   // Coupon usage
   if (order.coupon_id) {
-    await supabaseAdmin.rpc('increment_coupon_usage', { p_coupon_id: order.coupon_id }).catch(() => {})
+    await supabaseAdmin.rpc('increment_coupon_usage', { p_coupon_id: order.coupon_id })
   }
 
   // Notification
@@ -412,7 +413,7 @@ router.post('/verify', auth, async (req, res) => {
     message: `Your order ${order.order_number} is confirmed. Thank you!`,
     type:    'order',
     link:    `/orders/${order.id}`,
-  }).catch(() => {})
+  })
 
   console.log('[verify] ✅ Done. Order:', order.order_number)
   return res.json({
@@ -506,11 +507,13 @@ router.post('/cod', auth, async (req, res) => {
       unit_price:       item.unitPrice,
       total_price:      item.unitPrice * item.quantity,
     }))
-    await db.from('order_items').insert(orderItems).catch(e => console.error('[cod] order_items insert error:', e.message))
+    const { error: itemsErr } = await db.from('order_items').insert(orderItems)
+    if (itemsErr) console.error('[cod] order_items insert error:', itemsErr.message)
 
     // Deduct stock (SECURITY DEFINER)
     for (const item of details.validatedItems) {
-      await supabaseAdmin.rpc('decrement_stock', { p_product_id: item.product.id, p_quantity: item.quantity }).catch(e => console.warn('[cod] stock deduct error:', e.message))
+      const { error: stockErr } = await supabaseAdmin.rpc('decrement_stock', { p_product_id: item.product.id, p_quantity: item.quantity })
+      if (stockErr) console.warn('[cod] stock deduct error:', stockErr.message)
     }
 
     // Award reward points
@@ -519,8 +522,8 @@ router.post('/cod', auth, async (req, res) => {
       await db.from('reward_points').insert({
         user_id: req.user.id, points: pointsEarned, type: 'earned',
         description: `COD Order ${order.order_number}`, order_id: order.id,
-      }).catch(() => {})
-      await supabaseAdmin.rpc('increment_points', { p_user_id: req.user.id, p_points: pointsEarned }).catch(() => {})
+      })
+      await supabaseAdmin.rpc('increment_points', { p_user_id: req.user.id, p_points: pointsEarned })
     }
 
     // Deduct used points
@@ -528,8 +531,8 @@ router.post('/cod', auth, async (req, res) => {
       await db.from('reward_points').insert({
         user_id: req.user.id, points: -details.usablePoints, type: 'redeemed',
         description: `Redeemed for COD order ${order.order_number}`, order_id: order.id,
-      }).catch(() => {})
-      await supabaseAdmin.rpc('increment_points', { p_user_id: req.user.id, p_points: -details.usablePoints }).catch(() => {})
+      })
+      await supabaseAdmin.rpc('increment_points', { p_user_id: req.user.id, p_points: -details.usablePoints })
     }
 
     // Reset one-time special_discount
@@ -540,9 +543,9 @@ router.post('/cod', auth, async (req, res) => {
     }
 
     // Clear cart & coupon usage
-    await db.from('carts').delete().eq('user_id', req.user.id).catch(() => {})
+    await db.from('carts').delete().eq('user_id', req.user.id)
     if (order.coupon_id) {
-      await supabaseAdmin.rpc('increment_coupon_usage', { p_coupon_id: order.coupon_id }).catch(() => {})
+      await supabaseAdmin.rpc('increment_coupon_usage', { p_coupon_id: order.coupon_id })
     }
 
     // Notification
@@ -552,7 +555,7 @@ router.post('/cod', auth, async (req, res) => {
       message: `Your order ${order.order_number} is confirmed. Pay ₹${order.total_amount} on delivery.`,
       type:    'order',
       link:    `/orders/${order.id}`,
-    }).catch(() => {})
+    })
 
     console.log('[cod] ✅ Done. Order:', order.order_number)
     return res.json({

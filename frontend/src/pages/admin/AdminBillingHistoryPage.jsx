@@ -14,6 +14,8 @@ export default function AdminBillingHistoryPage() {
   const [invoices, setInvoices] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   
@@ -23,7 +25,7 @@ export default function AdminBillingHistoryPage() {
   const fetchInvoices = async () => {
     setLoading(true)
     try {
-      const { data } = await api.get(`/api/pos/invoices?page=${page}&limit=10&search=${search}`)
+      const { data } = await api.get(`/api/pos/invoices?page=${page}&limit=10&search=${search}&startDate=${startDate}&endDate=${endDate}`)
       if (data.success) {
         setInvoices(data.data)
         setTotalPages(data.total_pages)
@@ -91,7 +93,7 @@ export default function AdminBillingHistoryPage() {
 
       {/* Toolbar */}
       <div className="bg-white dark:bg-dark-800 p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-white/5 flex flex-col md:flex-row justify-between gap-4">
-        <form onSubmit={handleSearch} className="relative max-w-md w-full">
+        <form onSubmit={handleSearch} className="relative w-full md:w-1/3">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
             type="text"
@@ -102,6 +104,22 @@ export default function AdminBillingHistoryPage() {
           />
           <button type="submit" className="hidden" />
         </form>
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          <input 
+            type="date" 
+            className="input-primary flex-1 md:w-auto" 
+            value={startDate} 
+            onChange={e => setStartDate(e.target.value)}
+          />
+          <span className="text-gray-400">to</span>
+          <input 
+            type="date" 
+            className="input-primary flex-1 md:w-auto" 
+            value={endDate} 
+            onChange={e => setEndDate(e.target.value)}
+          />
+          <button onClick={handleSearch} className="btn-primary px-4 py-2">Filter</button>
+        </div>
       </div>
 
       {/* Data Table */}

@@ -79,7 +79,7 @@ router.post('/checkout', auth, adminOnly, async (req, res) => {
     const seqRes = await client.query("SELECT nextval('invoices_seq')") // Wait, we don't have a sequence.
     // Let's use a random suffix or a simpler approach:
     const randomSuffix = Math.floor(1000 + Math.random() * 9000)
-    const invoiceNumber = `POS-${dateStr}-${randomSuffix}`
+    const invoiceNumber = `Invoice-${dateStr}-${randomSuffix}`
 
     // 3. Create Invoice
     const invoiceRes = await client.query(`
@@ -130,7 +130,7 @@ router.post('/checkout', auth, adminOnly, async (req, res) => {
 // GET /api/pos/invoices - List history
 router.get('/invoices', auth, adminOnly, async (req, res) => {
   try {
-    const { page = 1, limit = 20, search } = req.query
+    const { page = 1, limit = 20, search, startDate, endDate } = req.query
     const offset = (page - 1) * limit
     
     let queryStr = 'FROM invoices WHERE 1=1'
@@ -139,6 +139,17 @@ router.get('/invoices', auth, adminOnly, async (req, res) => {
     if (search) {
       values.push(`%${search}%`)
       queryStr += ` AND (invoice_number ILIKE $${values.length} OR customer_name ILIKE $${values.length} OR customer_phone ILIKE $${values.length})`
+    }
+    
+    if (startDate) {
+      values.push(startDate)
+      queryStr += ` AND created_at >= $${values.length}`
+    }
+
+    if (endDate) {
+      values.push(endDate)
+      // Adding 1 day to include the end date fully
+      queryStr += ` AND created_at < $${values.length}::timestamp + interval '1 day'`
     }
 
     const countRes = await pool.query(`SELECT COUNT(*) ${queryStr}`, values)

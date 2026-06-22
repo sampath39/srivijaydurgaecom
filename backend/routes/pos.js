@@ -20,8 +20,11 @@ router.get('/products', auth, adminOnly, async (req, res) => {
     const values = []
     
     if (search && search.trim() !== '') {
-      values.push(`%${search}%`)
-      queryStr += ` AND (name ILIKE $1 OR sku ILIKE $1 OR CAST(id AS TEXT) ILIKE $1)`
+      const terms = search.trim().split(/\s+/)
+      terms.forEach(term => {
+        values.push(`%${term}%`)
+        queryStr += ` AND (name ILIKE $${values.length} OR sku ILIKE $${values.length} OR CAST(id AS TEXT) ILIKE $${values.length})`
+      })
     }
     
     queryStr += ` ORDER BY name ASC LIMIT 50`

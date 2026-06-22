@@ -7,6 +7,7 @@ import {
 import { Link } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import api from '../../lib/axios'
+import { supabase } from '../../lib/supabase'
 import InvoicePrintout from '../../components/admin/InvoicePrintout'
 import html2pdf from 'html2pdf.js'
 
@@ -38,10 +39,17 @@ export default function AdminBillingPage() {
     const fetchProducts = async () => {
       setIsSearching(true)
       try {
-        const { data } = await api.get('/api/pos/products')
-        if (data.success) {
-          setAllProducts(data.data)
-          setSearchResults(data.data)
+        const { data, error } = await supabase
+          .from('products')
+          .select('id, name, sku, stock_count, price, discount_price, images')
+          .eq('is_active', true)
+          .order('name')
+        
+        if (error) throw error
+        
+        if (data) {
+          setAllProducts(data)
+          setSearchResults(data)
         }
       } catch (err) {
         console.error('Failed to load products', err)

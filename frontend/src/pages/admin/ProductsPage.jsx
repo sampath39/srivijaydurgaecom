@@ -17,6 +17,8 @@ export default function AdminProductsPage() {
   const [confirmName, setConfirmName] = useState('')
   const [deleting, setDeleting]       = useState(false)
   const [seeding, setSeeding]         = useState(false)
+  const [showImportModal, setShowImportModal] = useState(false)
+  const [isDragging, setIsDragging]   = useState(false)
   const LIMIT = 15
 
   const load = async (p = 1, q = '') => {
@@ -88,10 +90,14 @@ export default function AdminProductsPage() {
     }
   }
 
-  const handleImport = (e) => {
-    const file = e.target.files[0]
+  const handleImport = (fileOrEvent) => {
+    let file;
+    if (fileOrEvent?.target?.files) file = fileOrEvent.target.files[0];
+    else file = fileOrEvent; // drag and drop
+    
     if (!file) return
     const tId = toast.loading('Importing products...')
+    setShowImportModal(false)
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
@@ -116,7 +122,23 @@ export default function AdminProductsPage() {
       },
       error: () => toast.error('Failed to parse CSV', { id: tId })
     })
-    e.target.value = ''
+    if (fileOrEvent?.target) fileOrEvent.target.value = ''
+  }
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  }
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+  }
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleImport(e.dataTransfer.files[0]);
+    }
   }
 
   return (
@@ -172,17 +194,53 @@ export default function AdminProductsPage() {
         )}
       </AnimatePresence>
 
+      {/* ── Import CSV Modal with Drag & Drop ── */}
+      <AnimatePresence>
+        {showImportModal && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white dark:bg-dark-800 rounded-2xl p-6 max-w-md w-full shadow-2xl relative"
+            >
+              <button onClick={() => setShowImportModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+                <Trash2 className="w-5 h-5 hidden" /> {/* just placeholder */}
+                ✖
+              </button>
+              <h3 className="font-bold text-gray-900 dark:text-white text-lg mb-2">Import Products (CSV)</h3>
+              <p className="text-sm text-gray-500 mb-6">Upload a CSV file containing your product catalog. Existing products with the same SKU will be updated.</p>
+              
+              <div 
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                className={`border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center text-center transition-colors cursor-pointer ${isDragging ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20' : 'border-gray-300 dark:border-dark-600 hover:border-primary-400 hover:bg-gray-50 dark:hover:bg-dark-700'}`}
+              >
+                <Upload className={`w-10 h-10 mb-3 ${isDragging ? 'text-primary-500 animate-bounce' : 'text-gray-400'}`} />
+                <p className="font-semibold text-gray-700 dark:text-gray-300">Drag & Drop your CSV here</p>
+                <p className="text-sm text-gray-500 mt-1 mb-4">or</p>
+                <label className="btn-primary py-2 px-6 cursor-pointer text-sm">
+                  Browse Files
+                  <input type="file" accept=".csv" onChange={handleImport} className="hidden" />
+                </label>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-display text-2xl font-bold text-gray-900 dark:text-white">Products</h1>
           <p className="text-gray-400 text-sm">{total} total products (all statuses)</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <label className="btn-outline py-2.5 px-4 text-sm flex items-center gap-2 cursor-pointer">
+          <button onClick={() => setShowImportModal(true)} className="btn-outline py-2.5 px-4 text-sm flex items-center gap-2">
             <Upload className="w-4 h-4 text-gray-500" />
             Import CSV
-            <input type="file" accept=".csv" onChange={handleImport} className="hidden" />
-          </label>
+          </button>
           <button onClick={handleExport} className="btn-outline py-2.5 px-4 text-sm flex items-center gap-2">
             <Download className="w-4 h-4 text-gray-500" />
             Export CSV

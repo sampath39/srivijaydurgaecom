@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { TrendingUp, ShoppingBag, Users, IndianRupee, Package, Star, BarChart2, RefreshCcw } from 'lucide-react'
+import { useSelector } from 'react-redux'
 import api from '../../lib/axios'
 import toast from 'react-hot-toast'
 
@@ -37,6 +38,7 @@ function SimpleBar({ label, value, max, color = 'bg-primary-500' }) {
 export default function AnalyticsPage() {
   const [data,    setData]    = useState(null)
   const [loading, setLoading] = useState(true)
+  const role = useSelector(s => s.auth.role)
 
   const load = async () => {
     setLoading(true)
@@ -82,6 +84,15 @@ export default function AnalyticsPage() {
       <div className="w-8 h-8 border-3 border-primary-500 border-t-transparent rounded-full animate-spin" />
     </div>
   )
+
+  if (role !== 'super_admin' && role !== 'admin') {
+    return (
+      <div className="text-center py-20">
+        <h1 className="text-3xl font-bold text-red-500 mb-4">Access Denied</h1>
+        <p className="text-gray-500">You do not have permission to view financial analytics.</p>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-8 max-w-6xl">

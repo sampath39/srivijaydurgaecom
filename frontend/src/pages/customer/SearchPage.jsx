@@ -16,18 +16,33 @@ export default function SearchPage() {
     if (!query) { setResults([]); return }
     setLoading(true)
     
-    // Advanced "Semantic-like" Multi-Field Search
-    // Instead of exact phrase match, we check if each word exists in ANY of the product's attributes.
-    const words = query.trim().split(/\s+/).filter(Boolean);
-    let dbQuery = supabase.from('products').select('*, categories(name,slug)').eq('is_active', true);
-    
-    words.forEach(word => {
-      // Each word must match at least one of these columns
-      dbQuery = dbQuery.or(`name.ilike.%${word}%,description.ilike.%${word}%,brand.ilike.%${word}%,color.ilike.%${word}%,fabric.ilike.%${word}%,subcategory.ilike.%${word}%`);
-    });
-
-    dbQuery.limit(24)
-      .then(({ data }) => { setResults(data || []); setLoading(false) })
+    // Advanced Semantic Full-Text Search via Supabase RPC
+    supabase.rpc('search_products', { search_term: query.trim() })
+      .then(({ data, error }) => {
+        if (error) throw error
+        // Fetch categories for the returned products to match the old payload format
+        if (data && data.length > 0) {
+          const categoryIds = [...new Set(data.map(p => p.category_id).filter(Boolean))]
+          if (categoryIds.length > 0) {
+            supabase.from('categories').select('id, name, slug').in('id', categoryIds)
+              .then(({ data: cats }) => {
+                const catMap = {}
+                cats?.forEach(c => catMap[c.id] = c)
+                const enriched = data.map(p => ({ ...p, categories: catMap[p.category_id] }))
+                setResults(enriched)
+                setLoading(false)
+              })
+            return
+          }
+        }
+        setResults(data || [])
+        setLoading(false)
+      })
+      .catch(err => {
+        console.error('Search error:', err)
+        setResults([])
+        setLoading(false)
+      })
   }, [query])
 
   const handleSearch = (e) => {

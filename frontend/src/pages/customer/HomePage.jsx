@@ -65,6 +65,7 @@ export default function HomePage() {
   const [flashProducts, setFlashProducts]       = useState([])
   const [loadingFeatured, setLoadingFeatured]   = useState(true)
   const [loadingFlash, setLoadingFlash]         = useState(true)
+  const [shopTheLook, setShopTheLook]           = useState([])
   const cartCount = useSelector(selectCartCount)
   const profile = useSelector(s => s.auth.profile)
 
@@ -88,6 +89,26 @@ export default function HomePage() {
         if (error) console.error("Supabase error flash sale products:", error)
         setFlashProducts(data || [])
         setLoadingFlash(false)
+      })
+
+    // Fetch UGC "Shop the Look"
+    supabase.from('reviews')
+      .select('*, products(*), profiles(full_name)')
+      .not('images', 'is', null)
+      .neq('images', '{}')
+      .gte('rating', 4)
+      .order('created_at', { ascending: false })
+      .limit(6)
+      .then(({ data, error }) => {
+        if (!error && data) {
+          // Flatten array of arrays or parse string
+          const processed = data.filter(r => {
+            if (Array.isArray(r.images) && r.images.length > 0) return true;
+            if (typeof r.images === 'string' && r.images.includes('http')) return true;
+            return false;
+          }).slice(0, 6);
+          setShopTheLook(processed)
+        }
       })
   }, [])
 
